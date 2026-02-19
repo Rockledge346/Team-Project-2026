@@ -1,11 +1,36 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin</title>
+    <title>Admin Page</title>
 </head>
 <body>
-    <p>admin page</p>
+
+<h1>Admin Panel</h1>
+
+<a href="/admin/create-booking">
+    <button>Create Booking</button>
+</a>
+
+<h2>All Bookings</h2>
+
+<table border="1" cellpadding="5">
+    <tr>
+        <th>Guest Name</th>
+        <th>Email</th>
+        <th>Check-in</th>
+        <th>Check-out</th>
+    </tr>
+
+    {% for booking in bookings %}
+    <tr>
+        <td>{{ booking.guest_name }}</td>
+        <td>{{ booking.guest_email }}</td>
+        <td>{{ booking.check_in }}</td>
+        <td>{{ booking.check_out }}</td>
+    </tr>
+    {% endfor %}
+</table>
+
 </body>
 </html>
+
