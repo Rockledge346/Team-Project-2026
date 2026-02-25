@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Book {{ room_type.name }} - The Grand Hotel</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+
+    <nav class="navbar navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/">The Grand Hotel</a>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+
+        <h2>Complete Your Booking</h2>
+
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5>{{ room_type.name }}</h5>
+                <p class="mb-1">Check-in: <strong>{{ check_in }}</strong></p>
+                <p class="mb-1">Check-out: <strong>{{ check_out }}</strong></p>
+                <p class="mb-1">Duration: <strong>{{ num_nights }} night{{ 's' if num_nights != 1 else '' }}</strong></p>
+                <p class="mb-0">Total: <strong>&pound;{{ "%.2f"|format(total) }}</strong></p>
+            </div>
+        </div>
+
+        <form method="post" id="bookingForm">
+            <input type="hidden" name="check_in" value="{{ check_in }}">
+            <input type="hidden" name="check_out" value="{{ check_out }}">
+
+            <div class="card mb-4">
+                <div class="card-header"><h5 class="mb-0">Guest Details</h5></div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="first_name" class="form-label">First Name</label>
+                            <input type="text" class="form-control" id="first_name" name="first_name" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="last_name" class="form-label">Last Name</label>
+                            <input type="text" class="form-control" id="last_name" name="last_name" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="email" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="email" name="email" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="phone" class="form-label">Phone Number</label>
+                            <input type="tel" class="form-control" id="phone" name="phone">
+                        </div>
+                        <div class="col-12">
+                            <label for="address" class="form-label">Address</label>
+                            <textarea class="form-control" id="address" name="address" rows="2"></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header"><h5 class="mb-0">Stay Details</h5></div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="num_adults" class="form-label">Number of Adults</label>
+                            <select class="form-select" id="num_adults" name="num_adults">
+                                {% for i in range(1, room_type.max_adults + 1) %}
+                                <option value="{{ i }}">{{ i }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="num_children" class="form-label">Number of Children</label>
+                            <select class="form-select" id="num_children" name="num_children">
+                                {% for i in range(0, room_type.max_children + 1) %}
+                                <option value="{{ i }}">{{ i }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label for="special_requests" class="form-label">Special Requests (optional)</label>
+                            <textarea class="form-control" id="special_requests" name="special_requests" rows="2" placeholder="e.g. extra pillows, late check-in"></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header"><h5 class="mb-0">Payment</h5></div>
+                <div class="card-body">
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="radio" name="payment_method" id="pay_reception" value="reception" checked>
+                        <label class="form-check-label" for="pay_reception">Pay at Reception</label>
+                    </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="radio" name="payment_method" id="pay_card" value="card">
+                        <label class="form-check-label" for="pay_card">Pay Now (Card)</label>
+                    </div>
+
+                    <div id="cardFields" style="display: none;">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="card_number" class="form-label">Card Number</label>
+                                <input type="text" class="form-control" id="card_number" placeholder="1234 5678 9012 3456" maxlength="19">
+                            </div>
+                            <div class="col-md-3">
+                                <label for="card_expiry" class="form-label">Expiry Date</label>
+                                <input type="text" class="form-control" id="card_expiry" placeholder="MM/YY" maxlength="5">
+                            </div>
+                            <div class="col-md-3">
+                                <label for="card_cvv" class="form-label">CVV</label>
+                                <input type="text" class="form-control" id="card_cvv" placeholder="123" maxlength="3">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-lg mb-4">Confirm Booking</button>
+            <a href="/search?check_in={{ check_in }}&check_out={{ check_out }}" class="btn btn-outline-secondary btn-lg mb-4">&larr; Back</a>
+
+        </form>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Show/hide card fields based on payment method
+        var radios = document.querySelectorAll('input[name="payment_method"]');
+        var cardFields = document.getElementById('cardFields');
+
+        radios.forEach(function(radio) {
+            radio.addEventListener('change', function() {
+                if (this.value === 'card') {
+                    cardFields.style.display = 'block';
+                } else {
+                    cardFields.style.display = 'none';
+                }
+            });
+        });
+    </script>
+
+</body>
+</html>

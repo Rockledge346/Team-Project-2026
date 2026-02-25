@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Available Rooms - The Grand Hotel</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+
+    <nav class="navbar navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/">The Grand Hotel</a>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+
+        <h2>Available Rooms</h2>
+        <p class="text-muted">
+            Showing rooms for <strong>{{ check_in }}</strong> to <strong>{{ check_out }}</strong>
+            ({{ num_nights }} night{{ 's' if num_nights != 1 else '' }})
+        </p>
+
+        <hr>
+
+        {% if room_types %}
+            {% for room in room_types %}
+            <div class="card mb-4">
+                <div class="row g-0">
+                    <div class="col-md-4">
+                        <img src="{{ room.photos }}" class="img-fluid rounded-start" alt="{{ room.name }}" style="height: 100%; object-fit: cover;">
+                    </div>
+                    <div class="col-md-8">
+                        <div class="card-body">
+                            <h4 class="card-title">{{ room.name }}</h4>
+                            <p class="card-text">{{ room.description }}</p>
+                            <p class="card-text">
+                                <small class="text-muted">
+                                    Max occupancy: {{ room.max_occupancy }} ({{ room.max_adults }} adults, {{ room.max_children }} children)
+                                </small>
+                            </p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <span class="h5">&pound;{{ "%.2f"|format(room.base_price) }}</span>
+                                    <span class="text-muted">per night</span>
+                                    <br>
+                                    <small class="text-muted">Total: &pound;{{ "%.2f"|format(room.base_price * num_nights) }} for {{ num_nights }} night{{ 's' if num_nights != 1 else '' }}</small>
+                                </div>
+                                <a href="/book/{{ room.id }}?check_in={{ check_in }}&check_out={{ check_out }}" class="btn btn-primary">Book Now</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="alert alert-info">
+                No rooms available for the selected dates. Please try different dates.
+            </div>
+        {% endif %}
+
+        <a href="/" class="btn btn-outline-secondary mb-4">&larr; Change Dates</a>
+
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+</body>
+</html>
