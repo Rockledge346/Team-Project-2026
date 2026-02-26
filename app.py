@@ -161,28 +161,120 @@ def confirmation_page(booking_id):
     return render_template("confirmation.html", booking=booking, room_type=room_type)
 
 
-# ---- Admin Routes (unchanged) ----
+
+# ---- Admin Routes ----
 
 @app.route("/admin")
 def admin_page():
-    bookings = Booking.query.all()
-    return render_template("admin.html", bookings=bookings)
+    return render_template("admin.html")
 
 
+#view bookings route
+@app.route("/admin/bookings")
+def admin_bookings():
+    bookings = Booking.query.order_by(Booking.id.desc()).all()
+
+    booking_rows = []
+    for b in bookings:
+        room_type_name = b.room_type.name if b.room_type else "—"
+
+        nights = "—"
+        try:
+            ci = datetime.strptime(b.check_in, "%Y-%m-%d")
+            co = datetime.strptime(b.check_out, "%Y-%m-%d")
+            nights = (co - ci).days
+        except:
+            pass
+
+        booking_rows.append({
+            "id": b.id,
+            "guest_name": b.guest_name,
+            "guest_email": b.guest_email,
+            "check_in": b.check_in,
+            "check_out": b.check_out,
+            "nights": nights,
+            "room_type": room_type_name,
+            "num_rooms": b.num_rooms,
+            "total_amount": b.total_amount,
+            "currency": b.currency or "GBP",
+            "status": b.status,
+            "payment_status": b.payment_status,
+            "is_paid": (b.payment_status == "paid"),
+            "special_requests": b.special_requests or ""
+
+        })
+
+    return render_template("admin_booking.html", bookings=booking_rows)
+
+#admin create booking route
 @app.route("/admin/create-booking", methods=["GET", "POST"])
 def create_booking():
+    room_types = RoomType.query.all()
+
     if request.method == "POST":
-        booking = Booking(
-            guest_name=request.form["name"],
-            guest_email=request.form["email"],
-            check_in=request.form["check_in"],
-            check_out=request.form["check_out"]
+        # required
+        first_name = request.form["first_name"]
+        last_name = request.form["last_name"]
+        email = request.form["email"]
+        check_in = request.form["check_in"]
+        check_out = request.form["check_out"]
+        room_type_id = int(request.form["room_type_id"])
+
+        # optional
+        phone = request.form.get("phone", "")
+        address = request.form.get("address", "")
+        num_rooms = int(request.form.get("num_rooms", 1))
+        num_adults = int(request.form.get("num_adults", 1))
+        num_children = int(request.form.get("num_children", 0))
+        status = request.form.get("status", "confirmed")
+        payment_status = request.form.get("payment_status", "pending")
+        special_requests = request.form.get("special_requests", "")
+
+        # nights + total
+        ci = datetime.strptime(check_in, "%Y-%m-%d")
+        co = datetime.strptime(check_out, "%Y-%m-%d")
+        num_nights = (co - ci).days
+        if num_nights < 1:
+            return redirect(url_for("create_booking"))
+
+        room_type = RoomType.query.get_or_404(room_type_id)
+        total = room_type.base_price * num_nights * num_rooms
+
+        # create guest
+        guest = Guest(
+            first_name=first_name,
+            last_name=last_name,
+            email=email,
+            phone=phone,
+            address=address
         )
+        db.session.add(guest)
+        db.session.flush()  # gives guest.id
+
+        # create booking
+        booking = Booking(
+            guest_name=f"{first_name} {last_name}",
+            guest_email=email,
+            check_in=check_in,
+            check_out=check_out,
+            guest_id=guest.id,
+            room_type_id=room_type.id,
+            reference=f"BK{datetime.utcnow().strftime('%Y%m%d%H%M%S')}",
+            status=status,
+            payment_status=payment_status,
+            num_rooms=num_rooms,
+            num_adults=num_adults,
+            num_children=num_children,
+            special_requests=special_requests,
+            total_amount=total,
+            currency="GBP"
+        )
+
         db.session.add(booking)
         db.session.commit()
-        return redirect("/admin")
+        return redirect("/admin/booking")
 
-    return render_template("create_booking.html")
+    return render_template("create_booking.html", room_types=room_types)
 
 
 # ---- Seed Data ----

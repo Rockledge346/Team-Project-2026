@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Admin - Bookings</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+
+<nav class="navbar navbar-dark bg-dark">
+  <div class="container">
+    <a class="navbar-brand" href="/">The Grand Hotel</a>
+    <a class="btn btn-outline-light btn-sm" href="/admin">Admin</a>
+  </div>
+</nav>
+
+<div class="container mt-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0">Bookings</h2>
+    <div class="d-flex gap-2">
+      <a class="btn btn-success" href="/admin/create-booking">Create Booking</a>
+      <a class="btn btn-outline-secondary" href="/admin">Back</a>
+    </div>
+  </div>
+
+  {% if bookings %}
+    <div class="table-responsive">
+      <table class="table table-striped table-bordered align-middle">
+        <thead class="table-dark">
+          <tr>
+            <th>ID</th>
+            <th>Guest</th>
+            <th>Email</th>
+            <th>Room Type</th>
+            <th>Check-in</th>
+            <th>Check-out</th>
+            <th>Nights</th>
+            <th>Rooms</th>
+            <th>Total</th>
+            <th>Status</th>
+            <th>Special Requests</th>
+            <th>Payment</th>
+           
+          </tr>
+        </thead>
+        <tbody>
+          {% for b in bookings %}
+          <tr>
+            <td>{{ b.id }}</td>
+            <td>{{ b.guest_name }}</td>
+            <td>{{ b.guest_email }}</td>
+            <td>{{ b.room_type }}</td>
+            <td>{{ b.check_in }}</td>
+            <td>{{ b.check_out }}</td>
+            <td>{{ b.nights }}</td>
+            <td>{{ b.num_rooms }}</td>
+            <td>
+              {% if b.total_amount is not none %}
+                {{ b.currency }} {{ "%.2f"|format(b.total_amount) }}
+              {% else %}
+                —
+              {% endif %}
+            </td>
+           <td>{{ b.status }}</td>
+
+<td style="max-width: 250px; white-space: normal;">
+  {% if b.special_requests %}
+    {{ b.special_requests }}
+  {% else %}
+    —
+  {% endif %}
+</td>
+
+<td>
+  {% if b.is_paid %}
+    <span class="badge bg-success">Paid</span>
+  {% else %}
+    <span class="badge bg-warning text-dark">Pending</span>
+  {% endif %}
+</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="alert alert-info">No bookings made yet.</div>
+  {% endif %}
+</div>
+
+</body>
+</html>

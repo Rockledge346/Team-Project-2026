@@ -1,30 +1,121 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Create Booking</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Create Booking (Admin)</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
 
-<h1>Create Booking</h1>
+<nav class="navbar navbar-dark bg-dark">
+  <div class="container">
+    <a class="navbar-brand" href="/">The Grand Hotel</a>
+    <a class="btn btn-outline-light btn-sm" href="/admin">Admin</a>
+  </div>
+</nav>
 
-<form method="post">
-    <label>Guest Name</label><br>
-    <input type="text" name="name" required><br><br>
+<div class="container mt-4">
+  <h2 class="mb-3">Create Booking (Admin)</h2>
 
-    <label>Guest Email</label><br>
-    <input type="email" name="email" required><br><br>
+  <div class="card">
+    <div class="card-body">
+      <form method="post">
 
-    <label>Check-in Date</label><br>
-    <input type="date" name="check_in" required><br><br>
+        <div class="row g-3">
 
-    <label>Check-out Date</label><br>
-    <input type="date" name="check_out" required><br><br>
+          <div class="col-md-6">
+            <label class="form-label">First name</label>
+            <input class="form-control" type="text" name="first_name" required>
+          </div>
 
-    <button type="submit">Save Booking</button>
-</form>
+          <div class="col-md-6">
+            <label class="form-label">Last name</label>
+            <input class="form-control" type="text" name="last_name" required>
+          </div>
 
-<br>
-<a href="/admin">Back to Admin</a>
+          <div class="col-md-6">
+            <label class="form-label">Email</label>
+            <input class="form-control" type="email" name="email" required>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">Phone (optional)</label>
+            <input class="form-control" type="text" name="phone">
+          </div>
+
+          <div class="col-12">
+            <label class="form-label">Address (optional)</label>
+            <textarea class="form-control" name="address" rows="2"></textarea>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">Check-in</label>
+            <input class="form-control" type="date" name="check_in" required>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">Check-out</label>
+            <input class="form-control" type="date" name="check_out" required>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">Room type</label>
+            <select class="form-select" name="room_type_id" required>
+              <option value="">Select a room type...</option>
+              {% for rt in room_types %}
+                <option value="{{ rt.id }}">{{ rt.name }} (£{{ "%.2f"|format(rt.base_price) }}/night)</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">Number of rooms</label>
+            <input class="form-control" type="number" name="num_rooms" min="1" value="1" required>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">Adults</label>
+            <input class="form-control" type="number" name="num_adults" min="1" value="1" required>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">Children</label>
+            <input class="form-control" type="number" name="num_children" min="0" value="0" required>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">Booking status</label>
+            <select class="form-select" name="status" required>
+              <option value="confirmed" selected>confirmed</option>
+              <option value="cancelled">cancelled</option>
+            </select>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">Payment status</label>
+            <select class="form-select" name="payment_status" required>
+              <option value="pending" selected>pending</option>
+              <option value="paid">paid</option>
+            </select>
+          </div>
+
+          <div class="col-12">
+            <label class="form-label">Special requests (optional)</label>
+            <textarea class="form-control" name="special_requests" rows="3"></textarea>
+          </div>
+
+        </div>
+
+        <div class="mt-4 d-flex gap-2">
+          <button class="btn btn-primary" type="submit">Save Booking</button>
+          <a class="btn btn-outline-secondary" href="/admin">Back</a>
+        </div>
+
+      </form>
+    </div>
+  </div>
+</div>
 
 </body>
 </html>
