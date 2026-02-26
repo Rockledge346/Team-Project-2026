@@ -1,5 +1,6 @@
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import func
 from config import Config
 from datetime import datetime
 
@@ -73,6 +74,16 @@ def customer_page():
     return render_template("customer.html")
 
 
+def get_rooms_booked(room_type_id, check_in, check_out):
+    """Count how many rooms of a given type are booked during the date range."""
+    return Booking.query.filter(
+        Booking.room_type_id == room_type_id,
+        Booking.status != 'cancelled',
+        Booking.check_in < check_out,
+        Booking.check_out > check_in
+    ).count()
+
+
 @app.route("/search")
 def search_page():
     check_in = request.args.get("check_in")
@@ -90,8 +101,16 @@ def search_page():
 
     room_types = RoomType.query.all()
 
+    available_rooms = []
+    for rt in room_types:
+        booked = get_rooms_booked(rt.id, check_in, check_out)
+        rooms_left = rt.num_rooms - booked
+        if rooms_left > 0:
+            rt.rooms_available = rooms_left
+            available_rooms.append(rt)
+
     return render_template("search.html",
-                           room_types=room_types,
+                           room_types=available_rooms,
                            check_in=check_in,
                            check_out=check_out,
                            num_nights=num_nights)
@@ -111,7 +130,19 @@ def book_page(room_type_id):
     num_nights = (co - ci).days
     total = room_type.base_price * num_nights
 
+    booked = get_rooms_booked(room_type.id, check_in, check_out)
+    rooms_left = room_type.num_rooms - booked
+
+    if rooms_left <= 0:
+        flash("Sorry, this room type is fully booked for the selected dates.", "danger")
+        return redirect(url_for("search_page", check_in=check_in, check_out=check_out))
+
     if request.method == "POST":
+        booked = get_rooms_booked(room_type.id, check_in, check_out)
+        if booked >= room_type.num_rooms:
+            flash("Sorry, this room type just became fully booked. Please choose another.", "danger")
+            return redirect(url_for("search_page", check_in=check_in, check_out=check_out))
+
         guest = Guest(
             first_name=request.form["first_name"],
             last_name=request.form["last_name"],
