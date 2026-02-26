@@ -9,8 +9,6 @@ app.config.from_object(Config)
 db = SQLAlchemy(app)
 
 
-# ---- Models ----
-
 class RoomType(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     code = db.Column(db.String(20), nullable=False, unique=True)
@@ -67,15 +65,12 @@ class Room(db.Model):
     room_type = db.relationship('RoomType', backref='rooms')
 
 
-# ---- Customer Routes ----
-
 @app.route("/")
 def customer_page():
     return render_template("customer.html")
 
 
 def get_rooms_booked(room_type_id, check_in, check_out):
-    """Count how many rooms of a given type are booked during the date range."""
     return Booking.query.filter(
         Booking.room_type_id == room_type_id,
         Booking.status != 'cancelled',
@@ -193,14 +188,11 @@ def confirmation_page(booking_id):
 
 
 
-# ---- Admin Routes ----
-
 @app.route("/admin")
 def admin_page():
     return render_template("admin.html")
 
 
-#view bookings route
 @app.route("/admin/bookings")
 def admin_bookings():
     bookings = Booking.query.order_by(Booking.id.desc()).all()
@@ -237,13 +229,11 @@ def admin_bookings():
 
     return render_template("admin_booking.html", bookings=booking_rows)
 
-#admin create booking route
 @app.route("/admin/create-booking", methods=["GET", "POST"])
 def create_booking():
     room_types = RoomType.query.all()
 
     if request.method == "POST":
-        # required
         first_name = request.form["first_name"]
         last_name = request.form["last_name"]
         email = request.form["email"]
@@ -251,7 +241,6 @@ def create_booking():
         check_out = request.form["check_out"]
         room_type_id = int(request.form["room_type_id"])
 
-        # optional
         phone = request.form.get("phone", "")
         address = request.form.get("address", "")
         num_rooms = int(request.form.get("num_rooms", 1))
@@ -261,7 +250,6 @@ def create_booking():
         payment_status = request.form.get("payment_status", "pending")
         special_requests = request.form.get("special_requests", "")
 
-        # nights + total
         ci = datetime.strptime(check_in, "%Y-%m-%d")
         co = datetime.strptime(check_out, "%Y-%m-%d")
         num_nights = (co - ci).days
@@ -271,7 +259,6 @@ def create_booking():
         room_type = RoomType.query.get_or_404(room_type_id)
         total = room_type.base_price * num_nights * num_rooms
 
-        # create guest
         guest = Guest(
             first_name=first_name,
             last_name=last_name,
@@ -280,9 +267,8 @@ def create_booking():
             address=address
         )
         db.session.add(guest)
-        db.session.flush()  # gives guest.id
+        db.session.flush()
 
-        # create booking
         booking = Booking(
             guest_name=f"{first_name} {last_name}",
             guest_email=email,
@@ -308,8 +294,6 @@ def create_booking():
     return render_template("create_booking.html", room_types=room_types)
 
 
-
-# ---- Seed Data ----
 
 def seed_data():
     if RoomType.query.first() is not None:
@@ -348,7 +332,6 @@ def seed_data():
     db.session.add_all(room_types)
     db.session.commit()
 
-    # Create rooms for each type
     floors = {"STD": 1, "DLX": 2, "FAM": 3, "EXC": 4}
     for rt in RoomType.query.all():
         floor = floors.get(rt.code, 1)
