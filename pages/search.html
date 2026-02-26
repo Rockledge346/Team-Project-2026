@@ -53,10 +53,10 @@
                             </p>
                             <div class="d-flex justify-content-between align-items-center">
                                 <div>
-                                    <span class="h5">&pound;{{ "%.2f"|format(room.base_price) }}</span>
+                                    <span class="h5">&euro;{{ "%.2f"|format(room.base_price) }}</span>
                                     <span class="text-muted">per night</span>
                                     <br>
-                                    <small class="text-muted">Total: &pound;{{ "%.2f"|format(room.base_price * num_nights) }} for {{ num_nights }} night{{ 's' if num_nights != 1 else '' }}</small>
+                                    <small class="text-muted">Total: &euro;{{ "%.2f"|format(room.base_price * num_nights) }} for {{ num_nights }} night{{ 's' if num_nights != 1 else '' }}</small>
                                 </div>
                                 <a href="/book/{{ room.id }}?check_in={{ check_in }}&check_out={{ check_out }}" class="btn btn-primary">Book Now</a>
                             </div>

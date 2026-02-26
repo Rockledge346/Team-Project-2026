@@ -50,7 +50,7 @@ class Booking(db.Model):
     num_children = db.Column(db.Integer, default=0)
     special_requests = db.Column(db.Text)
     total_amount = db.Column(db.Float)
-    currency = db.Column(db.String(10), default='GBP')
+    currency = db.Column(db.String(10), default='EUR')
     room_type = db.relationship('RoomType', backref='bookings')
     guest = db.relationship('Guest', backref='bookings')
 
@@ -170,7 +170,7 @@ def book_page(room_type_id):
             num_children=int(request.form.get("num_children", 0)),
             special_requests=request.form.get("special_requests", ""),
             total_amount=total,
-            currency="GBP"
+            currency="EUR"
         )
         db.session.add(booking)
         db.session.commit()
@@ -227,7 +227,7 @@ def admin_bookings():
             "room_type": room_type_name,
             "num_rooms": b.num_rooms,
             "total_amount": b.total_amount,
-            "currency": b.currency or "GBP",
+            "currency": b.currency or "EUR",
             "status": b.status,
             "payment_status": b.payment_status,
             "is_paid": (b.payment_status == "paid"),
@@ -298,7 +298,7 @@ def create_booking():
             num_children=num_children,
             special_requests=special_requests,
             total_amount=total,
-            currency="GBP"
+            currency="EUR"
         )
 
         db.session.add(booking)
