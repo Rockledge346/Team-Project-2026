@@ -303,9 +303,10 @@ def create_booking():
 
         db.session.add(booking)
         db.session.commit()
-        return redirect("/admin/booking")
+        return redirect("/admin/bookings")
 
     return render_template("create_booking.html", room_types=room_types)
+
 
 
 # ---- Seed Data ----
