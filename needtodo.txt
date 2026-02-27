@@ -1,0 +1,8 @@
+-----NEED TO DO-----
+
+add update, remove rooms.
+add users, remove users.
+update remove bookings.
+check if a room is available.
+only have certain amount of rooms per room type. 
+
