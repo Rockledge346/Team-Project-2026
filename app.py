@@ -67,7 +67,8 @@ class Room(db.Model):
 
 @app.route("/")
 def customer_page():
-    return render_template("customer.html")
+    room_types = RoomType.query.all()
+    return render_template("customer.html", room_types=room_types)
 
 
 def get_rooms_booked(room_type_id, check_in, check_out):
@@ -305,28 +306,28 @@ def seed_data():
             description="Comfortable room with a double bed, en-suite bathroom, TV, and free Wi-Fi. Perfect for solo travellers or couples.",
             max_adults=2, max_children=1, max_occupancy=3,
             base_price=89.00, num_rooms=10,
-            photos="https://placehold.co/600x400/e8d5b7/333?text=Standard+Room"
+            photos="/static/standard.png"
         ),
         RoomType(
             code="DLX", name="Deluxe Room",
             description="Spacious room with a king-size bed, seating area, en-suite bathroom with bath, TV, and free Wi-Fi.",
             max_adults=2, max_children=2, max_occupancy=4,
             base_price=129.00, num_rooms=8,
-            photos="https://placehold.co/600x400/c9b99a/333?text=Deluxe+Room"
+            photos="/static/deluxe.png"
         ),
         RoomType(
             code="FAM", name="Family Suite",
             description="Large suite with a king-size bed and two single beds. Separate living area, en-suite bathroom, TV, and free Wi-Fi. Ideal for families.",
             max_adults=2, max_children=3, max_occupancy=5,
             base_price=189.00, num_rooms=5,
-            photos="https://placehold.co/600x400/b8c9a1/333?text=Family+Suite"
+            photos="/static/family.png"
         ),
         RoomType(
             code="EXC", name="Executive Suite",
             description="Premium suite with a king-size bed, separate living room, work desk, luxury bathroom, mini bar, TV, and free Wi-Fi.",
             max_adults=2, max_children=1, max_occupancy=3,
             base_price=249.00, num_rooms=3,
-            photos="https://placehold.co/600x400/a1b5c9/333?text=Executive+Suite"
+            photos="/static/executive.png"
         ),
     ]
     db.session.add_all(room_types)

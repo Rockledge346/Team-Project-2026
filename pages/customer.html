@@ -17,6 +17,7 @@
     <div class="container mt-4">
 
         <div class="text-center mb-4">
+            <img src="/static/banner.png" class="img-fluid rounded mb-3" alt="The Letterkenny Hotel" style="max-height: 350px; width: 100%; object-fit: cover;">
             <h1>Welcome to The Letterkenny Hotel</h1>
             <p class="lead">The greatest hotel in all of Ireland.</p>
         </div>
@@ -29,7 +30,56 @@
                         <h5 class="mb-0">About Us</h5>
                     </div>
                     <div class="card-body">
-                        <p>The Letterkenny Hotel is located just minutes from the city centre, we offer easy access to local restaurants and pubs. Whether you're visiting for business or leisure, our friendly staff are here to give you the stay of your life.</p>
+                        <p>The Letterkenny Hotel is located just minutes from the town centre, we offer easy access to local restaurants and pubs. Whether you're visiting for business or leisure, our friendly staff are here to give you the stay of your life.</p>
+                    </div>
+                </div>
+
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">Our Rooms</h5>
+                    </div>
+                    <div class="card-body p-0">
+                        <div id="roomCarousel" class="carousel slide" data-bs-ride="false">
+                            <div class="carousel-indicators">
+                                {% for rt in room_types %}
+                                <button type="button" data-bs-target="#roomCarousel" data-bs-slide-to="{{ loop.index0 }}" {% if loop.first %}class="active"{% endif %}></button>
+                                {% endfor %}
+                            </div>
+                            <div class="carousel-inner">
+                                {% for rt in room_types %}
+                                <div class="carousel-item {% if loop.first %}active{% endif %}">
+                                    <img src="{{ rt.photos }}" class="d-block w-100" alt="{{ rt.name }}" style="height: 300px; object-fit: cover;">
+                                    <div class="carousel-caption" style="background: rgba(0,0,0,0.5); border-radius: 8px; padding: 10px 20px;">
+                                        <h5>{{ rt.name }}</h5>
+                                        <p class="mb-0">From &euro;{{ "%.2f"|format(rt.base_price) }} per night</p>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            <button class="carousel-control-prev" type="button" data-bs-target="#roomCarousel" data-bs-slide="prev">
+                                <span class="carousel-control-prev-icon"></span>
+                            </button>
+                            <button class="carousel-control-next" type="button" data-bs-target="#roomCarousel" data-bs-slide="next">
+                                <span class="carousel-control-next-icon"></span>
+                            </button>
+                        </div>
+                        <div class="p-3">
+                            <form action="/search" method="get" id="carouselBookingForm">
+                                <div class="row g-2 align-items-end">
+                                    <div class="col-md-4">
+                                        <label for="carousel_check_in" class="form-label mb-1">Check-in</label>
+                                        <input type="date" class="form-control date-input" id="carousel_check_in" name="check_in" required>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="carousel_check_out" class="form-label mb-1">Check-out</label>
+                                        <input type="date" class="form-control date-input" id="carousel_check_out" name="check_out" required>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <button type="submit" class="btn btn-primary w-100">Book Now</button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
                     </div>
                 </div>
 
@@ -49,28 +99,6 @@
                     </div>
                 </div>
 
-                <div class="card mb-4">
-                    <div class="card-header">
-                        <h5 class="mb-0">Book Your Stay</h5>
-                    </div>
-                    <div class="card-body">
-                        <form action="/search" method="get" id="bookingForm">
-                            <div class="row g-3">
-                                <div class="col-md-5">
-                                    <label for="check_in" class="form-label">Check-in Date</label>
-                                    <input type="date" class="form-control" id="check_in" name="check_in" required>
-                                </div>
-                                <div class="col-md-5">
-                                    <label for="check_out" class="form-label">Check-out Date</label>
-                                    <input type="date" class="form-control" id="check_out" name="check_out" required>
-                                </div>
-                                <div class="col-md-2 d-flex align-items-end">
-                                    <button type="submit" class="btn btn-primary w-100">Book Now</button>
-                                </div>
-                            </div>
-                        </form>
-                    </div>
-                </div>
 
             </div>
         </div>
@@ -79,20 +107,20 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         var today = new Date().toISOString().split('T')[0];
-        document.getElementById('check_in').setAttribute('min', today);
-        document.getElementById('check_out').setAttribute('min', today);
+        document.getElementById('carousel_check_in').setAttribute('min', today);
+        document.getElementById('carousel_check_out').setAttribute('min', today);
 
-        document.getElementById('check_in').addEventListener('change', function() {
+        document.getElementById('carousel_check_in').addEventListener('change', function() {
             var checkIn = this.value;
-            document.getElementById('check_out').setAttribute('min', checkIn);
-            if (document.getElementById('check_out').value <= checkIn) {
-                document.getElementById('check_out').value = '';
+            document.getElementById('carousel_check_out').setAttribute('min', checkIn);
+            if (document.getElementById('carousel_check_out').value <= checkIn) {
+                document.getElementById('carousel_check_out').value = '';
             }
         });
 
-        document.getElementById('bookingForm').addEventListener('submit', function(e) {
-            var checkIn = document.getElementById('check_in').value;
-            var checkOut = document.getElementById('check_out').value;
+        document.getElementById('carouselBookingForm').addEventListener('submit', function(e) {
+            var checkIn = document.getElementById('carousel_check_in').value;
+            var checkOut = document.getElementById('carousel_check_out').value;
             if (checkOut <= checkIn) {
                 e.preventDefault();
                 alert('Check-out date must be after check-in date.');
