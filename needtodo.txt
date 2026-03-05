@@ -1,8 +1,12 @@
 -----NEED TO DO-----
-
+Admin and user side
 add update, remove rooms.
 add users, remove users.
 update remove bookings.
 check if a room is available.
 only have certain amount of rooms per room type. 
+have a view rooms page.
+home page should just have info and a button to view rooms and book your stay button.
+photo of random hotel on home page. 
+
 
