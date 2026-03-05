@@ -295,7 +295,48 @@ def create_booking():
     return render_template("create_booking.html", room_types=room_types)
 
 
+#manage edit delete bookings admin side
+@app.route("/admin/manage-booking/<int:booking_id>", methods=["GET", "POST"])
+def manage_booking(booking_id):
+    booking = Booking.query.get_or_404(booking_id)
+    room_types = RoomType.query.all() 
 
+    if request.method == "POST":
+        action = request.form.get("action") 
+
+        if action == "delete":
+            db.session.delete(booking)
+            db.session.commit()
+            flash(f"Booking #{booking.id} deleted successfully.", "success")
+            return redirect("/admin/bookings")
+
+        elif action == "edit":
+            # Update booking details form
+            booking.status = request.form.get("status", booking.status)
+            booking.payment_status = request.form.get("payment_status", booking.payment_status)
+            booking.num_rooms = int(request.form.get("num_rooms", booking.num_rooms))
+            booking.num_adults = int(request.form.get("num_adults", booking.num_adults))
+            booking.num_children = int(request.form.get("num_children", booking.num_children))
+            booking.special_requests = request.form.get("special_requests", booking.special_requests)
+            #payment
+            payment_method = request.form.get("payment_method", "reception")
+            booking.payment_method = payment_method
+            booking.payment_status = "paid" if payment_method == "card" else "pending"
+            booking.payment_status = request.form.get("payment_status", booking.payment_status)
+            db.session.commit()
+            flash(f"Booking #{booking.id} updated successfully.", "success")
+            return redirect("/admin/bookings")
+
+
+    return render_template("admin_edit_booking.html", booking=booking, room_types=room_types)
+
+
+
+
+
+
+
+#seed data 
 def seed_data():
     if RoomType.query.first() is not None:
         return

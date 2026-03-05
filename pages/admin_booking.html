@@ -11,7 +11,7 @@
 <nav class="navbar navbar-dark bg-dark">
   <div class="container">
     <a class="navbar-brand" href="/">The Letterkenny Hotel</a>
-    <a class="btn btn-outline-light btn-sm" href="/admin">Admin</a>
+    <a class="btn btn-outline-light btn-sm" href="/admin">Back to Dashboard</a>
   </div>
 </nav>
 
@@ -39,9 +39,9 @@
             <th>Rooms</th>
             <th>Total</th>
             <th>Status</th>
-            <th>Special Requests</th>
             <th>Payment</th>
-           
+            <th>Special Requests</th>
+            <th>Manage</th> <!-- New column -->
           </tr>
         </thead>
         <tbody>
@@ -62,23 +62,27 @@
                 —
               {% endif %}
             </td>
-           <td>{{ b.status }}</td>
-
-<td style="max-width: 250px; white-space: normal;">
-  {% if b.special_requests %}
-    {{ b.special_requests }}
-  {% else %}
-    —
-  {% endif %}
-</td>
-
-<td>
-  {% if b.is_paid %}
-    <span class="badge bg-success">Paid</span>
-  {% else %}
-    <span class="badge bg-warning text-dark">Pending</span>
-  {% endif %}
-</td>
+            <td>{{ b.status }}</td>
+            <td>
+              {% if b.is_paid %}
+                <span class="badge bg-success">Paid</span>
+              {% else %}
+                <span class="badge bg-warning text-dark">Pending</span>
+              {% endif %}
+            </td>
+            <td style="max-width:250px; white-space:normal;">
+              {% if b.special_requests %}
+                {{ b.special_requests }}
+              {% else %}
+                —
+              {% endif %}
+            </td>
+            <td>
+              <!-- Manage button -->
+              <a class="btn btn-warning btn-sm" href="{{ url_for('manage_booking', booking_id=b.id) }}">
+                Manage
+              </a>
+            </td>
           </tr>
           {% endfor %}
         </tbody>
