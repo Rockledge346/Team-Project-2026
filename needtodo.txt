@@ -10,3 +10,20 @@ home page should just have info and a button to view rooms and book your stay bu
 photo of random hotel on home page. 
 
 
+For V2
+
+---Kyle---
+make look nicer
+refrence system 
+add cancellation info to policies
+
+
+
+---Aaron---
+search system for bookings
+
+
+---Fionn---
+admin user creation deletion
+
+
