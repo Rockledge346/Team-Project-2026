@@ -70,9 +70,13 @@
             </td>
             <td>{{ b.status }}</td>
             <td>
-              {% if b.is_paid %}
+              {% if b.payment_status == "paid" %}
                 <span class="badge bg-success">Paid</span>
-              {% else %}
+            
+                {% elif b.payment_status == "refunded" %}
+             <span class="badge bg-info">Refunded</span>
+             
+                {% else %}
                 <span class="badge bg-warning text-dark">Pending</span>
               {% endif %}
             </td>
@@ -100,11 +104,11 @@
 </div>
 
 
-<!--smal script to make the flash msg only stay for 1.5 seconds -->
+<!--smal script to make the flash msg only stay for 2 seconds -->
 <script>
 setTimeout(function() {
   document.querySelectorAll('.alert').forEach(alert => alert.remove());
-}, 1500);
+}, 3000);
 </script>
 
 

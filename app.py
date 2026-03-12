@@ -313,10 +313,27 @@ def manage_booking(booking_id):
 
         if action == "cancel":
             booking.status = "cancelled"
+            #refund if within 24 hours
+            if booking.payment_status == "paid":
+
+                checkin = datetime.strptime(booking.check_in, "%Y-%m-%d")
+                hours_until_checkin = (checkin - datetime.utcnow()).total_seconds() / 3600
+
+                if hours_until_checkin > 24:
+                  booking.payment_status = "refunded"
+                  flash("Booking cancelled. Payment refunded.", "success")
+                else:
+                  flash("Booking cancelled. Refund not available within 24 hours of check-in.", "warning")
+
+            else:
+             flash("Booking cancelled successfully.", "warning")
+            
             db.session.commit()
             flash(f"Booking #{booking.id} cancelled successfully.", "warning")
             return redirect("/admin/bookings")
-
+    
+    
+    
         elif action == "edit":
             # Update booking details form
             booking.status = request.form.get("status", booking.status)
