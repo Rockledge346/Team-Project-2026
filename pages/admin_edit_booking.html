@@ -42,31 +42,30 @@
               </select>
             </div>
 
-            <!-- Number of Rooms -->
+          
             <div class="mb-3">
               <label class="form-label">Number of Rooms</label>
               <input class="form-control" type="number" name="num_rooms" value="{{ booking.num_rooms }}">
             </div>
 
-            <!-- Adults -->
+        
             <div class="mb-3">
               <label class="form-label">Adults</label>
               <input class="form-control" type="number" name="num_adults" value="{{ booking.num_adults }}">
             </div>
 
-            <!-- Children -->
             <div class="mb-3">
               <label class="form-label">Children</label>
               <input class="form-control" type="number" name="num_children" value="{{ booking.num_children }}">
             </div>
 
-            <!-- Special Requests -->
+          
             <div class="mb-3">
               <label class="form-label">Special Requests</label>
-              <textarea class="form-control" name="special_requests" rows="3">{{ booking.special_requests }}</textarea>
+              <textarea class="form-control" name="special_requests" rows="2"style="resize: none;">{{ booking.special_requests }}</textarea>
             </div>
 
-            <!-- Action Buttons -->
+         
             <div class="d-grid gap-2">
               <button type="submit" name="action" value="edit" class="btn btn-success btn-lg">Save Changes</button>
               <button type="submit" name="action" value="cancel" class="btn btn-danger btn-lg"
