@@ -303,11 +303,18 @@ def manage_booking(booking_id):
 
     if request.method == "POST":
         action = request.form.get("action") 
+        
+        
+        #cannot edit cancelled bookings
+        if booking.status == "cancelled" and action!="cancel":
+          flash("Cancelled bookings cannot be edited.", "danger")
+          return redirect("/admin/bookings")
 
-        if action == "delete":
-            db.session.delete(booking)
+
+        if action == "cancel":
+            booking.status = "cancelled"
             db.session.commit()
-            flash(f"Booking #{booking.id} deleted successfully.", "success")
+            flash(f"Booking #{booking.id} cancelled successfully.", "warning")
             return redirect("/admin/bookings")
 
         elif action == "edit":
@@ -322,12 +329,23 @@ def manage_booking(booking_id):
             payment_method = request.form.get("payment_method", "reception")
             booking.payment_method = payment_method
             booking.payment_status = "paid" if payment_method == "card" else "pending"
-            booking.payment_status = request.form.get("payment_status", booking.payment_status)
+            #booking.payment_status = request.form.get("payment_status", booking.payment_status)
+           
+           #if new rooom added add to oirignal price 
+            room = RoomType.query.get(booking.room_type_id)
+            if room:
+                ci = datetime.strptime(booking.check_in, "%Y-%m-%d")
+                co = datetime.strptime(booking.check_out, "%Y-%m-%d")
+                nights = (co - ci).days
+
+                booking.total_amount = room.base_price * nights * booking.num_rooms
+
             db.session.commit()
+
             flash(f"Booking #{booking.id} updated successfully.", "success")
             return redirect("/admin/bookings")
-
-
+           
+    
     return render_template("admin_edit_booking.html", booking=booking, room_types=room_types)
 
 

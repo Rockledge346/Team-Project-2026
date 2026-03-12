@@ -11,16 +11,22 @@
 <nav class="navbar navbar-dark bg-dark">
   <div class="container">
     <a class="navbar-brand" href="/">The Letterkenny Hotel</a>
-    <a class="btn btn-outline-light btn-sm" href="/admin">Back to Dashboard</a>
+
   </div>
 </nav>
 
 <div class="container mt-4">
+{% for category, message in get_flashed_messages(with_categories=true) %}
+<div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+  {{ message }}
+  <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+{% endfor %}
   <div class="d-flex justify-content-between align-items-center mb-3">
     <h2 class="mb-0">Bookings</h2>
     <div class="d-flex gap-2">
-      <a class="btn btn-success" href="/admin/create-booking">Create Booking</a>
-      <a class="btn btn-outline-secondary" href="/admin">Back</a>
+      <a class="btn btn-dark" href="/admin/create-booking">Create Booking</a>
+      <a class="btn btn-dark" href="/admin">Return</a>
     </div>
   </div>
 
@@ -41,7 +47,7 @@
             <th>Status</th>
             <th>Payment</th>
             <th>Special Requests</th>
-            <th>Manage</th> <!-- New column -->
+            <th>Manage</th> 
           </tr>
         </thead>
         <tbody>
@@ -57,7 +63,7 @@
             <td>{{ b.num_rooms }}</td>
             <td>
               {% if b.total_amount is not none %}
-                {{ b.currency }} {{ "%.2f"|format(b.total_amount) }}
+                <span class="text-nowrap">€ {{ "%.2f"|format(b.total_amount) }}</span>
               {% else %}
                 —
               {% endif %}
@@ -79,7 +85,7 @@
             </td>
             <td>
               <!-- Manage button -->
-              <a class="btn btn-warning btn-sm" href="{{ url_for('manage_booking', booking_id=b.id) }}">
+              <a class="btn btn-dark btn-sm" href="{{ url_for('manage_booking', booking_id=b.id) }}">
                 Manage
               </a>
             </td>
@@ -92,6 +98,16 @@
     <div class="alert alert-info">No bookings made yet.</div>
   {% endif %}
 </div>
+
+
+<!--smal script to make the flash msg only stay for 1.5 seconds -->
+<script>
+setTimeout(function() {
+  document.querySelectorAll('.alert').forEach(alert => alert.remove());
+}, 1500);
+</script>
+
+
 
 </body>
 </html>
