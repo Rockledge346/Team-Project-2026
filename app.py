@@ -3,6 +3,8 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import func
 from config import Config
 from datetime import datetime
+import random
+import string
 
 app = Flask(__name__, template_folder="pages")
 app.config.from_object(Config)
@@ -63,6 +65,13 @@ class Room(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow)
     room_type = db.relationship('RoomType', backref='rooms')
+
+
+def generate_reference():
+    while True:
+        ref = ''.join(random.choices(string.ascii_uppercase + string.digits, k=5))
+        if not Booking.query.filter_by(reference=ref).first():
+            return ref
 
 
 @app.route("/")
@@ -159,7 +168,7 @@ def book_page(room_type_id):
             check_out=check_out,
             guest_id=guest.id,
             room_type_id=room_type.id,
-            reference="11111",
+            reference=generate_reference(),
             status="confirmed",
             payment_status=payment_status,
             num_adults=int(request.form.get("num_adults", 1)),
@@ -187,6 +196,71 @@ def confirmation_page(booking_id):
     room_type = RoomType.query.get(booking.room_type_id) if booking.room_type_id else None
     return render_template("confirmation.html", booking=booking, room_type=room_type)
 
+
+
+@app.route("/my-booking", methods=["GET", "POST"])
+def my_booking():
+    if request.method == "POST":
+        ref = request.form.get("reference", "").strip().upper()
+        email = request.form.get("email", "").strip().lower()
+        if not ref or not email:
+            flash("Please enter both your reference number and email.", "danger")
+            return redirect(url_for("my_booking"))
+        booking = Booking.query.filter_by(reference=ref).first()
+        if not booking or booking.guest_email.lower() != email:
+            flash("No booking found. Please check your reference number and email.", "danger")
+            return redirect(url_for("my_booking"))
+        return redirect(url_for("view_booking", reference=ref))
+    return render_template("my_booking_lookup.html")
+
+
+@app.route("/my-booking/<reference>", methods=["GET", "POST"])
+def view_booking(reference):
+    booking = Booking.query.filter_by(reference=reference.upper()).first()
+    if not booking:
+        flash("No booking found with that reference number.", "danger")
+        return redirect("/")
+
+    room_type = RoomType.query.get(booking.room_type_id) if booking.room_type_id else None
+
+    if request.method == "POST":
+        action = request.form.get("action")
+
+        if action == "cancel":
+            if booking.status == "cancelled":
+                flash("This booking is already cancelled.", "warning")
+            else:
+                booking.status = "cancelled"
+                if booking.payment_status == "paid":
+                    checkin = datetime.strptime(booking.check_in, "%Y-%m-%d")
+                    hours_until = (checkin - datetime.utcnow()).total_seconds() / 3600
+                    if hours_until > 24:
+                        booking.payment_status = "refunded"
+                        flash("Booking cancelled. Your payment has been refunded.", "success")
+                    else:
+                        flash("Booking cancelled. Refund not available within 24 hours of check-in.", "warning")
+                else:
+                    flash("Booking cancelled successfully.", "success")
+                db.session.commit()
+            return redirect(url_for("view_booking", reference=reference))
+
+        elif action == "edit":
+            if booking.status == "cancelled":
+                flash("Cancelled bookings cannot be edited.", "danger")
+                return redirect(url_for("view_booking", reference=reference))
+
+            booking.num_adults = int(request.form.get("num_adults", booking.num_adults))
+            booking.num_children = int(request.form.get("num_children", booking.num_children))
+            booking.special_requests = request.form.get("special_requests", booking.special_requests)
+            db.session.commit()
+            flash("Booking updated successfully.", "success")
+            return redirect(url_for("view_booking", reference=reference))
+
+    ci = datetime.strptime(booking.check_in, "%Y-%m-%d")
+    co = datetime.strptime(booking.check_out, "%Y-%m-%d")
+    num_nights = (co - ci).days
+
+    return render_template("my_booking.html", booking=booking, room_type=room_type, num_nights=num_nights)
 
 
 @app.route("/admin")
