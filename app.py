@@ -65,6 +65,23 @@ class Room(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow)
     room_type = db.relationship('RoomType', backref='rooms')
+    
+    
+    
+    
+    #maintnence model 
+class RoomMaintenance(db.Model):
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    room_id = db.Column(db.Integer, db.ForeignKey('room.id'), nullable=False)
+
+    start_date = db.Column(db.String(20), nullable=False)
+    end_date = db.Column(db.String(20), nullable=False)
+
+    reason = db.Column(db.String(200))
+
+    room = db.relationship('Room')
 
 
 def generate_reference():
@@ -109,7 +126,20 @@ def search_page():
     available_rooms = []
     for rt in room_types:
         booked = get_rooms_booked(rt.id, check_in, check_out)
-        rooms_left = rt.num_rooms - booked
+       
+        useable_rooms = Room.query.filter_by(
+            room_type_id=rt.id,
+            status="available"
+        ).count()
+        
+        maintenance_rooms = RoomMaintenance.query.join(Room).filter(
+        Room.room_type_id == rt.id,
+        RoomMaintenance.start_date < check_out,
+        RoomMaintenance.end_date > check_in
+    ).count()
+        
+        
+        rooms_left = useable_rooms - booked - maintenance_rooms
         if rooms_left > 0:
             rt.rooms_available = rooms_left
             available_rooms.append(rt)
@@ -136,7 +166,18 @@ def book_page(room_type_id):
     total = room_type.base_price * num_nights
 
     booked = get_rooms_booked(room_type.id, check_in, check_out)
-    rooms_left = room_type.num_rooms - booked
+    usable_rooms = Room.query.filter_by(
+    room_type_id=room_type.id,
+    status="available"
+    ).count()
+
+    maintenance_rooms = RoomMaintenance.query.join(Room).filter(
+    Room.room_type_id == room_type.id,
+    RoomMaintenance.start_date < check_out,
+    RoomMaintenance.end_date > check_in
+    ).count()
+
+    rooms_left = usable_rooms - booked - maintenance_rooms
 
     if rooms_left <= 0:
         flash("Sorry, this room type is fully booked for the selected dates.", "danger")
@@ -261,6 +302,13 @@ def view_booking(reference):
     num_nights = (co - ci).days
 
     return render_template("my_booking.html", booking=booking, room_type=room_type, num_nights=num_nights)
+
+
+
+
+
+##ADMIN ROUTES
+
 
 
 @app.route("/admin")
@@ -424,7 +472,7 @@ def manage_booking(booking_id):
             payment_method = request.form.get("payment_method", "reception")
             booking.payment_method = payment_method
             booking.payment_status = "paid" if payment_method == "card" else "pending"
-            #booking.payment_status = request.form.get("payment_status", booking.payment_status)
+       
            
            #if new rooom added add to oirignal price 
             room = RoomType.query.get(booking.room_type_id)
@@ -442,6 +490,93 @@ def manage_booking(booking_id):
            
     
     return render_template("admin_edit_booking.html", booking=booking, room_types=room_types)
+
+#View Rooms
+@app.route("/admin/view_rooms")
+def view_rooms():
+
+    rooms = Room.query.all()
+    today = datetime.utcnow().date()
+
+    for room in rooms:
+
+
+        maintenance = RoomMaintenance.query.filter_by(room_id=room.id).first()
+
+        if maintenance:
+
+            start = datetime.strptime(maintenance.start_date, "%Y-%m-%d").date()
+            end = datetime.strptime(maintenance.end_date, "%Y-%m-%d").date()
+
+            if start <= today <= end:
+                room.display_status = "out_of_order"
+            else:
+                room.display_status = "available"
+
+            room.maintenance = maintenance
+
+        else:
+            room.display_status = "available"
+            room.maintenance = None
+
+
+    return render_template("view_rooms.html", rooms=rooms)
+
+
+
+
+
+
+
+
+
+
+
+#edit rooms route add edit remove update rooms.
+@app.route("/admin/edit_rooms")
+def edit_rooms():
+
+    rooms = Room.query.all()
+
+    return render_template("edit_rooms.html", rooms=rooms)
+
+
+
+
+
+
+
+
+##update room status
+@app.route("/admin/update-room-status/<int:room_id>", methods=["POST"])
+def update_room_status(room_id):
+
+    room = Room.query.get_or_404(room_id)
+
+    status = request.form.get("status")
+    start_date = request.form.get("start_date")
+    end_date = request.form.get("end_date")
+    reason = request.form.get("reason")
+
+    room.status = status
+    room.updated_at = datetime.utcnow()
+
+    #add maintnence 
+    if start_date and end_date:
+        maintenance = RoomMaintenance(
+            room_id=room.id,
+            start_date=start_date,
+            end_date=end_date,
+            reason=reason
+        )
+
+        db.session.add(maintenance)
+
+    db.session.commit()
+
+    flash("Room updated successfully.", "success")
+
+    return redirect("/admin/edit_rooms")
 
 
 

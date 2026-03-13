@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Room Status</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+
+<body>
+
+<nav class="navbar navbar-dark bg-dark">
+  <div class="container">
+    <a class="navbar-brand" href="/">The Letterkenny Hotel</a>
+    <a href="/admin" class="btn btn-secondary mt-3">Return</a>
+  </div>
+</nav>
+
+<div class="container py-5">
+
+<div class="row justify-content-center">
+<div class="col-lg-10">
+
+<div class="card shadow-sm">
+<div class="card-body p-4">
+
+<h2 class="mb-2">Room Status</h2>
+<p class="text-muted mb-4">
+View the current availability and maintenance schedule of rooms.
+</p>
+
+<table class="table table-striped align-middle">
+
+<thead>
+<tr>
+<th>Room</th>
+<th>Type</th>
+<th>Floor</th>
+<th>Status</th>
+<th>Maintenance From</th>
+<th>Maintenance To</th>
+<th>Reason</th>
+</tr>
+</thead>
+
+<tbody>
+
+{% for room in rooms %}
+
+<tr>
+
+<td>{{ room.room_number }}</td>
+
+<td>{{ room.room_type.name }}</td>
+
+<td>{{ room.floor }}</td>
+
+<td>
+
+{% if room.display_status == "available" %}
+<span class="badge bg-success">Available</span>
+
+{% elif room.display_status == "out_of_order" %}
+<span class="badge bg-danger">Out of Order</span>
+
+{% else %}
+<span class="badge bg-secondary">Unknown</span>
+{% endif %}
+
+</td>
+
+<td>
+{% if room.maintenance %}
+{{ room.maintenance.start_date }}
+{% else %}
+—
+{% endif %}
+</td>
+
+<td>
+{% if room.maintenance %}
+{{ room.maintenance.end_date }}
+{% else %}
+—
+{% endif %}
+</td>
+
+<td>
+{% if room.maintenance %}
+{{ room.maintenance.reason }}
+{% else %}
+—
+{% endif %}
+</td>
+
+</tr>
+
+{% endfor %}
+
+</tbody>
+
+</table>
+
+
+
+</div>
+</div>
+
+</div>
+</div>
+
+</div>
+
+</body>
+</html>
