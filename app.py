@@ -288,6 +288,7 @@ def admin_bookings():
             "id": b.id,
             "guest_name": b.guest_name,
             "guest_email": b.guest_email,
+            "reference": b.reference,
             "check_in": b.check_in,
             "check_out": b.check_out,
             "nights": nights,
@@ -321,6 +322,7 @@ def create_booking():
         num_rooms = int(request.form.get("num_rooms", 1))
         num_adults = int(request.form.get("num_adults", 1))
         num_children = int(request.form.get("num_children", 0))
+        reference=generate_reference(),
         status = request.form.get("status", "confirmed")
         payment_status = request.form.get("payment_status", "pending")
         special_requests = request.form.get("special_requests", "")
@@ -351,7 +353,7 @@ def create_booking():
             check_out=check_out,
             guest_id=guest.id,
             room_type_id=room_type.id,
-            reference=f"BK{datetime.utcnow().strftime('%Y%m%d%H%M%S')}",
+            reference=generate_reference(),
             status=status,
             payment_status=payment_status,
             num_rooms=num_rooms,
@@ -364,6 +366,8 @@ def create_booking():
 
         db.session.add(booking)
         db.session.commit()
+        
+     
         return redirect("/admin/bookings")
 
     return render_template("create_booking.html", room_types=room_types)
