@@ -57,15 +57,24 @@ View the current availability and maintenance schedule of rooms.
 
 <td>
 
-{% if room.display_status == "available" %}
-<span class="badge bg-success">Available</span>
+ {% if room.display_status == "available" %}
+    <span class="badge bg-success">Available</span>
 
-{% elif room.display_status == "out_of_order" %}
-<span class="badge bg-danger">Out of Order</span>
+  {% elif room.display_status == "out_of_order" %}
+    <span class="badge bg-danger">Out of Order</span>
 
-{% else %}
-<span class="badge bg-secondary">Unknown</span>
-{% endif %}
+  {% elif room.display_status == "upcoming" %}
+    <span class="badge bg-warning text-dark">Scheduled</span>
+  {% endif %}
+
+<br>
+{% if room.maintenance %}
+    <small>
+      {{ room.maintenance.start_date }} → {{ room.maintenance.end_date }}
+    </small>
+  {% endif %}
+
+
 
 </td>
 

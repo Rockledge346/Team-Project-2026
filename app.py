@@ -640,33 +640,41 @@ def manage_booking(booking_id):
 @admin_required
 def view_rooms():
 
-    rooms = Room.query.all()
-    today = datetime.utcnow().date()
+     rooms = Room.query.all()
+     today = datetime.utcnow().date()
 
-    for room in rooms:
+     for room in rooms:
 
+        maintenances = RoomMaintenance.query.filter(
+            RoomMaintenance.room_id == room.id
+        ).all()
 
-        maintenance = RoomMaintenance.query.filter_by(room_id=room.id).first()
+        active = None
+        upcoming = None
 
-        if maintenance:
-
-            start = datetime.strptime(maintenance.start_date, "%Y-%m-%d").date()
-            end = datetime.strptime(maintenance.end_date, "%Y-%m-%d").date()
+        for m in maintenances:
+            start = datetime.strptime(m.start_date, "%Y-%m-%d").date()
+            end = datetime.strptime(m.end_date, "%Y-%m-%d").date()
 
             if start <= today <= end:
-                room.display_status = "out_of_order"
-            else:
-                room.display_status = "available"
+                active = m
+            elif today < start:
+                if not upcoming or start <  datetime.strptime(upcoming.start_date, "%Y-%m-%d").date():
+                    upcoming = m
 
-            room.maintenance = maintenance
+        if active:
+            room.display_status = "out_of_order"
+            room.maintenance = active
+
+        elif upcoming:
+            room.display_status = "upcoming"
+            room.maintenance = upcoming
 
         else:
             room.display_status = "available"
             room.maintenance = None
 
-
-    return render_template("view_rooms.html", rooms=rooms)
-
+     return render_template("view_rooms.html", rooms=rooms)
 
 
 
