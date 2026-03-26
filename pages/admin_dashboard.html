@@ -33,11 +33,15 @@
 
             <!--View rooms and status-->
             <a class="btn btn-dark btn-lg" href="/admin/view_rooms">View Rooms</a>
-            
-
 
             <!-- Edit rooms  -->
             <a class="btn btn-dark btn-lg" href="/admin/edit_rooms">Edit Rooms</a>
+
+            <form action="{{ url_for('logout') }}" method="post">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="submit" class="btn btn-outline-dark btn-lg w-100">Logout</button>
+            </form>
+
           </div>
 
         </div>

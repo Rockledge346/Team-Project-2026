@@ -1,15 +1,39 @@
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash, session
+import uuid
+from flask_wtf import CSRFProtect
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import func
 from config import Config
 from datetime import datetime
 import random
 import string
+from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
+from werkzeug.security import generate_password_hash, check_password_hash
+from functools import wraps
+from getpass import getpass
+from urllib.parse import urlparse, urljoin 
 
 app = Flask(__name__, template_folder="pages")
 app.config.from_object(Config)
 db = SQLAlchemy(app)
+login_manager = LoginManager(app)
+login_manager.login_view = "login"
+csrf = CSRFProtect(app)
+APP_BOOT_ID = uuid.uuid4().hex
 
+class User(UserMixin, db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(80), unique=True, nullable=False)
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    password_hash = db.Column(db.String(256), nullable=False)
+    is_admin = db.Column(db.Boolean, default=False, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def set_password(self, password: str):
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password: str) -> bool:
+        return check_password_hash(self.password_hash, password)
 
 class RoomType(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -83,6 +107,39 @@ class RoomMaintenance(db.Model):
 
     room = db.relationship('Room')
 
+@app.before_request
+def invalidate_session_after_restart():
+    if current_user.is_authenticated:
+        if session.get("app_boot_id") != APP_BOOT_ID:
+            logout_user()
+            session.pop("app_boot_id", None)
+            return redirect(url_for("login"))
+
+@login_manager.user_loader
+def load_user(user_id):
+    try:
+        uid = int(user_id)
+    except (TypeError, ValueError):
+        return None
+    return User.query.get(uid)
+
+def admin_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if not current_user.is_authenticated:
+            flash("Please log in to access this page.", "warning")
+            return redirect(url_for("login", next=request.path))
+        if not current_user.is_admin:
+            flash("Admin access required.", "danger")
+            return redirect(url_for("customer_page"))
+        return f(*args, **kwargs)
+    return decorated
+
+def is_safe_url(target):
+    host_url = request.host_url
+    test_url = urlparse(urljoin(host_url, target))
+    ref_url = urlparse(host_url)
+    return test_url.scheme in ("http", "https") and ref_url.netloc == test_url.netloc
 
 def generate_reference():
     while True:
@@ -304,19 +361,101 @@ def view_booking(reference):
     return render_template("my_booking.html", booking=booking, room_type=room_type, num_nights=num_nights)
 
 
-
-
-
 ##ADMIN ROUTES
 
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    if request.method == "POST":
+        username = request.form["username"].strip()
+        email = request.form["email"].strip().lower()
+        password = request.form["password"]
 
+        if User.query.filter_by(username=username).first():
+            flash("Username already taken.", "danger")
+            return redirect(url_for("register"))
 
-@app.route("/admin")
-def admin_page():
-    return render_template("admin.html")
+        user = User(username=username, email=email)
+        user.set_password(password)
+        # By default is_admin=False. Make sure only trusted flow can set is_admin=True.
+        db.session.add(user)
+        db.session.commit()
+        flash("Registration successful. Please log in.", "success")
+        return redirect(url_for("login"))
+
+    return render_template("register.html")
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if request.method == "POST":
+        username = request.form["username"].strip()
+        password = request.form["password"]
+
+        user = User.query.filter(
+            (User.username == username) | (User.email == username)
+        ).first()
+
+        next_page = request.values.get("next")
+        if next_page and not is_safe_url(next_page):
+            next_page = None
+
+        if user and user.check_password(password):
+            login_user(user)
+            session["app_boot_id"] = APP_BOOT_ID
+            flash("Logged in successfully.", "success ")
+            if next_page:
+                return redirect(next_page)
+            elif user.is_admin:
+                return redirect(url_for("admin_dashboard"))
+                
+        flash("Invalid credentials.", "danger")
+        return redirect(url_for("login"))
+    return render_template("login.html")
+
+@app.route("/logout", methods=["POST"])
+@login_required
+def logout():
+    logout_user()
+    session.pop("app_boot_id", None)
+    flash("Logged out.", "info")
+    return redirect(url_for("customer_page"))
+
+@app.route("/admin-login")
+@login_required
+@admin_required
+def admin_login():
+    return render_template("admin-login.html")
+
+@app.route("/admin-dashboard")
+@login_required
+@admin_required
+def admin_dashboard():
+    return render_template("admin_dashboard.html")
+
+@app.cli.command("create-admin")
+def create_admin_command():
+    """Create an admin user interactively: flask create-admin"""
+    username = input("username: ").strip()
+    email = input("email: ").strip()
+    password = getpass("password: ")
+    if not username or not password or not email:
+        print("username, email and password required")
+        return
+
+    if User.query.filter_by(username=username).first():
+        print("user exists")
+        return
+
+    u = User(username=username, email=email.lower(), is_admin=True)
+    u.set_password(password)
+    db.session.add(u)
+    db.session.commit()
+    print("admin user created")
+
 
 
 @app.route("/admin/bookings")
+@login_required
+@admin_required
 def admin_bookings():
     bookings = Booking.query.order_by(Booking.id.desc()).all()
 
@@ -354,6 +493,8 @@ def admin_bookings():
     return render_template("admin_booking.html", bookings=booking_rows)
 
 @app.route("/admin/create-booking", methods=["GET", "POST"])
+@login_required
+@admin_required
 def create_booking():
     room_types = RoomType.query.all()
 
@@ -423,6 +564,8 @@ def create_booking():
 
 #manage edit delete bookings admin side
 @app.route("/admin/manage-booking/<int:booking_id>", methods=["GET", "POST"])
+@login_required
+@admin_required
 def manage_booking(booking_id):
     booking = Booking.query.get_or_404(booking_id)
     room_types = RoomType.query.all() 
@@ -493,35 +636,45 @@ def manage_booking(booking_id):
 
 #View Rooms
 @app.route("/admin/view_rooms")
+@login_required
+@admin_required
 def view_rooms():
 
-    rooms = Room.query.all()
-    today = datetime.utcnow().date()
+     rooms = Room.query.all()
+     today = datetime.utcnow().date()
 
-    for room in rooms:
+     for room in rooms:
 
+        maintenances = RoomMaintenance.query.filter(
+            RoomMaintenance.room_id == room.id
+        ).all()
 
-        maintenance = RoomMaintenance.query.filter_by(room_id=room.id).first()
+        active = None
+        upcoming = None
 
-        if maintenance:
-
-            start = datetime.strptime(maintenance.start_date, "%Y-%m-%d").date()
-            end = datetime.strptime(maintenance.end_date, "%Y-%m-%d").date()
+        for m in maintenances:
+            start = datetime.strptime(m.start_date, "%Y-%m-%d").date()
+            end = datetime.strptime(m.end_date, "%Y-%m-%d").date()
 
             if start <= today <= end:
-                room.display_status = "out_of_order"
-            else:
-                room.display_status = "available"
+                active = m
+            elif today < start:
+                if not upcoming or start <  datetime.strptime(upcoming.start_date, "%Y-%m-%d").date():
+                    upcoming = m
 
-            room.maintenance = maintenance
+        if active:
+            room.display_status = "out_of_order"
+            room.maintenance = active
+
+        elif upcoming:
+            room.display_status = "upcoming"
+            room.maintenance = upcoming
 
         else:
             room.display_status = "available"
             room.maintenance = None
 
-
-    return render_template("view_rooms.html", rooms=rooms)
-
+     return render_template("view_rooms.html", rooms=rooms)
 
 
 
@@ -534,6 +687,8 @@ def view_rooms():
 
 #edit rooms route add edit remove update rooms.
 @app.route("/admin/edit_rooms")
+@login_required
+@admin_required
 def edit_rooms():
 
     rooms = Room.query.all()
@@ -549,6 +704,8 @@ def edit_rooms():
 
 ##update room status
 @app.route("/admin/update-room-status/<int:room_id>", methods=["POST"])
+@login_required
+@admin_required
 def update_room_status(room_id):
 
     room = Room.query.get_or_404(room_id)

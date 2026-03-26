@@ -12,7 +12,7 @@
 <nav class="navbar navbar-dark bg-dark">
   <div class="container">
     <a class="navbar-brand" href="/">The Letterkenny Hotel</a>
-    <a href="/admin" class="btn btn-secondary mt-3">Return</a>
+    <a href="/admin-dashboard" class="btn btn-secondary mt-3">Return</a>
   </div>
 </nav>
 
@@ -66,6 +66,8 @@
 <tr>
 
 <form method="POST" action="/admin/update-room-status/{{ room.id }}">
+ <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
 
 <td>
 {{ room.room_number }}
@@ -84,12 +86,12 @@
 <select name="status" class="form-select">
 
 <option value="available"
-{% if room.status == "available" %}selected{% endif %}>
+{% if room.display_status == "available" %}selected{% endif %}>
 Available
 </option>
 
 <option value="out_of_order"
-{% if room.status == "out_of_order" %}selected{% endif %}>
+{% if room.display_status == "out_of_order" %}selected{% endif %}>
 Out of Order
 </option>
 
@@ -116,6 +118,7 @@ Out of Order
 </td>
 
 </form>
+
 
 </tr>
 
