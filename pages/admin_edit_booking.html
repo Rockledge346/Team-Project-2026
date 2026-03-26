@@ -23,6 +23,7 @@
         <div class="card-body p-4">
           <h2 class="mb-3">Manage Booking #{{ booking.id }}</h2>
           <form method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
             <!-- Booking Status -->
             <div class="mb-3">

@@ -39,6 +39,7 @@
                         <div class="card-body">
                             <p class="text-muted">Enter your reference number and email to view or edit your booking.</p>
                             <form action="/my-booking" method="post">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <div class="mb-3">
                                     <label for="reference" class="form-label">Booking Reference</label>
                                     <input type="text" class="form-control" id="reference" name="reference" placeholder="e.g. A3F7X" maxlength="5" required>

@@ -38,6 +38,7 @@
             </div>
 
             <form method="post" id="bookingForm">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <input type="hidden" name="check_in" value="{{ check_in }}">
                 <input type="hidden" name="check_out" value="{{ check_out }}">
 
