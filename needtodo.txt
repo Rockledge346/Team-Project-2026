@@ -9,21 +9,10 @@ have a view rooms page.
 home page should just have info and a button to view rooms and book your stay button.
 photo of random hotel on home page. 
 
+for final version
 
-For V2
-
----Kyle---
-make look nicer
-refrence system 
-add cancellation info to policies
-
-
-
----Aaron---
-search system for bookings
-
-
----Fionn---
-admin user creation deletion
+check in chck out system - admin side
+add ons/bar tab - Kyle
+fix view rooms
 
 
