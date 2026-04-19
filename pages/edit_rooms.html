@@ -25,7 +25,36 @@
 <div class="card-body p-4">
 
 <h2 class="mb-2">Manage Rooms</h2>
-<p class="text-muted mb-4">Update room status or schedule maintenance.</p>
+<p class="text-muted mb-4">Update room status & prices.</p>
+<!-- room pricing by room typew -->
+<h4 class="mt-4 mb-3">Room Type Pricing</h4>
+
+<div class="row mb-4">
+
+{% set shown_types = [] %}
+
+{% for room in rooms %}
+  {% if room.room_type.id not in shown_types %}
+    
+    <div class="col-md-3 mb-3">
+      <form method="POST" action="/admin/update-room-status/{{ room.id }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <label>{{ room.room_type.name }}</label>
+        <input type="number" step="0.01" name="price"
+        value="{{ room.room_type.base_price }}"
+        class="form-control mb-2">
+
+        <button class="btn btn-sm btn-dark w-100">Update</button>
+      </form>
+    </div>
+
+    {% set _ = shown_types.append(room.room_type.id) %}
+    
+  {% endif %}
+{% endfor %}
+
+</div>
 
 
 {% with messages = get_flashed_messages(with_categories=true) %}
@@ -44,16 +73,14 @@
 
 <table class="table table-striped align-middle">
 
-<thead>
+<thead> 
+<thead class="table-dark" style="position: sticky; top: 0;"></thead> 
 
 <tr>
 <th>Room</th>
 <th>Type</th>
 <th>Floor</th>
 <th>Status</th>
-<th>Close From</th>
-<th>Close To</th>
-<th>Reason</th>
 <th>Update</th>
 </tr>
 
@@ -86,30 +113,20 @@
 <select name="status" class="form-select">
 
 <option value="available"
-{% if room.display_status == "available" %}selected{% endif %}>
+{% if room.status == "available" %}selected{% endif %}>
 Available
 </option>
 
 <option value="out_of_order"
-{% if room.display_status == "out_of_order" %}selected{% endif %}>
+{% if room.status == "out_of_order" %}selected{% endif %}>
 Out of Order
 </option>
-
 </select>
 
 </td>
 
-<td>
-<input type="date" name="start_date" class="form-control">
 </td>
 
-<td>
-<input type="date" name="end_date" class="form-control">
-</td>
-
-<td>
-<input type="text" name="reason" class="form-control" placeholder="Maintenance reason">
-</td>
 
 <td>
 

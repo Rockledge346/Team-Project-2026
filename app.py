@@ -423,7 +423,7 @@ def logout():
 @login_required
 @admin_required
 def admin_login():
-    return render_template("admin-login.html")
+    return render_template("login.html")
 
 @app.route("/admin-dashboard")
 @login_required
@@ -641,38 +641,7 @@ def manage_booking(booking_id):
 def view_rooms():
 
      rooms = Room.query.all()
-     today = datetime.utcnow().date()
-
-     for room in rooms:
-
-        maintenances = RoomMaintenance.query.filter(
-            RoomMaintenance.room_id == room.id
-        ).all()
-
-        active = None
-        upcoming = None
-
-        for m in maintenances:
-            start = datetime.strptime(m.start_date, "%Y-%m-%d").date()
-            end = datetime.strptime(m.end_date, "%Y-%m-%d").date()
-
-            if start <= today <= end:
-                active = m
-            elif today < start:
-                if not upcoming or start <  datetime.strptime(upcoming.start_date, "%Y-%m-%d").date():
-                    upcoming = m
-
-        if active:
-            room.display_status = "out_of_order"
-            room.maintenance = active
-
-        elif upcoming:
-            room.display_status = "upcoming"
-            room.maintenance = upcoming
-
-        else:
-            room.display_status = "available"
-            room.maintenance = None
+  
 
      return render_template("view_rooms.html", rooms=rooms)
 
@@ -711,29 +680,19 @@ def update_room_status(room_id):
     room = Room.query.get_or_404(room_id)
 
     status = request.form.get("status")
-    start_date = request.form.get("start_date")
-    end_date = request.form.get("end_date")
-    reason = request.form.get("reason")
+    price = request.form.get("price")
 
     room.status = status
+    if price:
+        room.room_type.base_price = float(price)
     room.updated_at = datetime.utcnow()
-
-    #add maintnence 
-    if start_date and end_date:
-        maintenance = RoomMaintenance(
-            room_id=room.id,
-            start_date=start_date,
-            end_date=end_date,
-            reason=reason
-        )
-
-        db.session.add(maintenance)
 
     db.session.commit()
 
     flash("Room updated successfully.", "success")
 
     return redirect("/admin/edit_rooms")
+
 
 
 
@@ -787,7 +746,7 @@ def seed_data():
                 room_number=str(floor * 100 + i + 1),
                 room_type_id=rt.id,
                 floor=floor,
-                status="available"
+                status="available",
             )
             db.session.add(room)
     db.session.commit()

@@ -26,8 +26,36 @@
 
 <h2 class="mb-2">Room Status</h2>
 <p class="text-muted mb-4">
-View the current availability and maintenance schedule of rooms.
+View the current availability of rooms & prices.
 </p>
+<!-- Prices -->
+<h4 class="mt-4 mb-3">Room Type Prices</h4>
+
+<div class="row mb-4">
+
+{% set shown_types = [] %}
+
+{% for room in rooms %}
+  {% if room.room_type.id not in shown_types %}
+
+    <div class="col-md-3 mb-3">
+      <div class="card p-3 text-center shadow-sm">
+
+        <h6>{{ room.room_type.name }}</h6>
+        <h5 class="text-primary">
+          €{{ "%.2f"|format(room.room_type.base_price) }}
+        </h5>
+
+      </div>
+    </div>
+
+    {% set _ = shown_types.append(room.room_type.id) %}
+
+  {% endif %}
+{% endfor %}
+
+</div>
+
 
 <table class="table table-striped align-middle">
 
@@ -37,9 +65,6 @@ View the current availability and maintenance schedule of rooms.
 <th>Type</th>
 <th>Floor</th>
 <th>Status</th>
-<th>Maintenance From</th>
-<th>Maintenance To</th>
-<th>Reason</th>
 </tr>
 </thead>
 
@@ -55,52 +80,20 @@ View the current availability and maintenance schedule of rooms.
 
 <td>{{ room.floor }}</td>
 
+
+
+
+
 <td>
 
- {% if room.display_status == "available" %}
+ {% if room.status == "available" %}
     <span class="badge bg-success">Available</span>
 
-  {% elif room.display_status == "out_of_order" %}
+  {% elif room.status == "out_of_order" %}
     <span class="badge bg-danger">Out of Order</span>
-
-  {% elif room.display_status == "upcoming" %}
-    <span class="badge bg-warning text-dark">Scheduled</span>
-  {% endif %}
-
-<br>
-{% if room.maintenance %}
-    <small>
-      {{ room.maintenance.start_date }} → {{ room.maintenance.end_date }}
-    </small>
-  {% endif %}
-
-
-
-</td>
-
-<td>
-{% if room.maintenance %}
-{{ room.maintenance.start_date }}
-{% else %}
-—
 {% endif %}
 </td>
 
-<td>
-{% if room.maintenance %}
-{{ room.maintenance.end_date }}
-{% else %}
-—
-{% endif %}
-</td>
-
-<td>
-{% if room.maintenance %}
-{{ room.maintenance.reason }}
-{% else %}
-—
-{% endif %}
-</td>
 
 </tr>
 
