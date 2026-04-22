@@ -66,6 +66,12 @@
                                     <td>{{ room_type.name }}</td>
                                 </tr>
                                 {% endif %}
+                                {% if assigned_room_number %}
+                                <tr>
+                                    <th>Room Number:</th>
+                                    <td>{{ assigned_room_number }}</td>
+                                </tr>
+                                {% endif %}
                                 <tr>
                                     <th>Check-in:</th>
                                     <td>{{ booking.check_in }}</td>

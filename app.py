@@ -7,6 +7,7 @@ from config import Config
 from datetime import datetime
 import random
 import string
+import re
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
@@ -81,7 +82,6 @@ class Booking(db.Model):
     currency = db.Column(db.String(10), default='EUR')
     room_type = db.relationship('RoomType', backref='bookings')
     guest = db.relationship('Guest', backref='bookings')
-    rooms = db.relationship("Room", backref="booking")
 
 
 class Room(db.Model):
@@ -94,7 +94,23 @@ class Room(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow)
     room_type = db.relationship('RoomType', backref='rooms')
+    
+    
+    
+    
+    #maintnence model 
+class RoomMaintenance(db.Model):
 
+    id = db.Column(db.Integer, primary_key=True)
+
+    room_id = db.Column(db.Integer, db.ForeignKey('room.id'), nullable=False)
+
+    start_date = db.Column(db.String(20), nullable=False)
+    end_date = db.Column(db.String(20), nullable=False)
+
+    reason = db.Column(db.String(200))
+
+    room = db.relationship('Room')
 
 @app.before_request
 def invalidate_session_after_restart():
@@ -140,15 +156,71 @@ def generate_reference():
 def get_selected_addons(form_data):
     selected_keys = form_data.getlist("addons")
     selected = []
-    addons_total_per_night = 0.0
+    addons_total_per_person_per_night = 0.0
 
     for key in selected_keys:
         addon = BOOKING_ADDONS.get(key)
         if addon:
             selected.append({"key": key, **addon})
-            addons_total_per_night += addon["price"]
+            addons_total_per_person_per_night += addon["price"]
 
-    return selected, addons_total_per_night
+    return selected, addons_total_per_person_per_night
+
+
+def extract_assigned_room_number(special_requests_text):
+    if not special_requests_text:
+        return None
+    match = re.search(r"Assigned room:\s*([A-Za-z0-9\-]+)", special_requests_text)
+    return match.group(1) if match else None
+
+
+def build_special_requests(assigned_room_number, addon_text, user_special_requests):
+    parts = [f"Assigned room: {assigned_room_number}"]
+    if addon_text:
+        parts.append(addon_text)
+    if user_special_requests:
+        parts.append(user_special_requests.strip())
+    return " | ".join(parts)
+
+
+def room_sort_key(room):
+    return int(room.room_number) if str(room.room_number).isdigit() else str(room.room_number)
+
+
+def find_next_available_room(room_type_id, check_in, check_out):
+    rooms = Room.query.filter_by(room_type_id=room_type_id, status="available").all()
+    rooms = sorted(rooms, key=room_sort_key)
+
+    maintenance_room_ids = {
+        maintenance.room_id
+        for maintenance in RoomMaintenance.query.join(Room).filter(
+            Room.room_type_id == room_type_id,
+            RoomMaintenance.start_date < check_out,
+            RoomMaintenance.end_date > check_in
+        ).all()
+    }
+
+    overlapping_bookings = Booking.query.filter(
+        Booking.room_type_id == room_type_id,
+        Booking.status != "cancelled",
+        Booking.check_in < check_out,
+        Booking.check_out > check_in
+    ).all()
+
+    assigned_in_overlap = {
+        extract_assigned_room_number(booking.special_requests)
+        for booking in overlapping_bookings
+        if extract_assigned_room_number(booking.special_requests)
+    }
+
+    for room in rooms:
+        if room.id in maintenance_room_ids:
+            continue
+        if room.room_number in assigned_in_overlap:
+            continue
+        return room
+
+    return None
 
 
 @app.route("/")
@@ -191,10 +263,15 @@ def search_page():
             room_type_id=rt.id,
             status="available"
         ).count()
-   
+        
+        maintenance_rooms = RoomMaintenance.query.join(Room).filter(
+        Room.room_type_id == rt.id,
+        RoomMaintenance.start_date < check_out,
+        RoomMaintenance.end_date > check_in
+    ).count()
         
         
-        rooms_left = useable_rooms - booked
+        rooms_left = useable_rooms - booked - maintenance_rooms
         if rooms_left > 0:
             rt.rooms_available = rooms_left
             available_rooms.append(rt)
@@ -219,7 +296,7 @@ def book_page(room_type_id):
     co = datetime.strptime(check_out, "%Y-%m-%d")
     num_nights = (co - ci).days
     selected_addons = []
-    addons_total_per_night = 0.0
+    addons_total_per_person_per_night = 0.0
     addons_total = 0.0
     room_total = room_type.base_price * num_nights
     grand_total = room_total
@@ -230,9 +307,13 @@ def book_page(room_type_id):
     status="available"
     ).count()
 
-  
+    maintenance_rooms = RoomMaintenance.query.join(Room).filter(
+    Room.room_type_id == room_type.id,
+    RoomMaintenance.start_date < check_out,
+    RoomMaintenance.end_date > check_in
+    ).count()
 
-    rooms_left = usable_rooms - booked
+    rooms_left = usable_rooms - booked - maintenance_rooms
 
     if rooms_left <= 0:
         flash("Sorry, this room type is fully booked for the selected dates.", "danger")
@@ -244,8 +325,17 @@ def book_page(room_type_id):
             flash("Sorry, this room type just became fully booked. Please choose another.", "danger")
             return redirect(url_for("search_page", check_in=check_in, check_out=check_out))
 
-        selected_addons, addons_total_per_night = get_selected_addons(request.form)
-        addons_total = addons_total_per_night * num_nights
+        assigned_room = find_next_available_room(room_type.id, check_in, check_out)
+        if not assigned_room:
+            flash("Sorry, no specific room is available for those dates.", "danger")
+            return redirect(url_for("search_page", check_in=check_in, check_out=check_out))
+
+        num_adults = int(request.form.get("num_adults", 1))
+        num_children = int(request.form.get("num_children", 0))
+        total_people = num_adults + num_children
+
+        selected_addons, addons_total_per_person_per_night = get_selected_addons(request.form)
+        addons_total = addons_total_per_person_per_night * total_people * num_nights
         grand_total = room_total + addons_total
 
         guest = Guest(
@@ -256,10 +346,19 @@ def book_page(room_type_id):
             address=request.form.get("address", "")
         )
         db.session.add(guest)
-
+        db.session.flush()
 
         payment_method = request.form.get("payment_method", "reception")
         payment_status = "paid" if payment_method == "card" else "pending"
+
+        addon_labels = ", ".join(addon["label"] for addon in selected_addons)
+        addon_text = f"Add-ons: {addon_labels} ({total_people} guest(s))" if addon_labels else ""
+        user_special_requests = request.form.get("special_requests", "").strip()
+        combined_special_requests = build_special_requests(
+            assigned_room.room_number,
+            addon_text,
+            user_special_requests
+        )
 
         booking = Booking(
             guest_name=request.form["first_name"] + " " + request.form["last_name"],
@@ -271,17 +370,15 @@ def book_page(room_type_id):
             reference=generate_reference(),
             status="confirmed",
             payment_status=payment_status,
-            num_adults=int(request.form.get("num_adults", 1)),
-            num_children=int(request.form.get("num_children", 0)),
+            num_adults=num_adults,
+            num_children=num_children,
             special_requests=combined_special_requests,
             total_amount=grand_total,
             currency="EUR"
         )
         db.session.add(booking)
-      
-   
         db.session.commit()
-   
+
         return redirect(url_for("confirmation_page", booking_id=booking.id))
 
     return render_template("book.html",
@@ -298,7 +395,13 @@ def book_page(room_type_id):
 def confirmation_page(booking_id):
     booking = Booking.query.get_or_404(booking_id)
     room_type = RoomType.query.get(booking.room_type_id) if booking.room_type_id else None
-    return render_template("confirmation.html", booking=booking, room_type=room_type)
+    assigned_room_number = extract_assigned_room_number(booking.special_requests)
+    return render_template(
+        "confirmation.html",
+        booking=booking,
+        room_type=room_type,
+        assigned_room_number=assigned_room_number
+    )
 
 
 
@@ -364,7 +467,14 @@ def view_booking(reference):
     co = datetime.strptime(booking.check_out, "%Y-%m-%d")
     num_nights = (co - ci).days
 
-    return render_template("my_booking.html", booking=booking, room_type=room_type, num_nights=num_nights)
+    assigned_room_number = extract_assigned_room_number(booking.special_requests)
+    return render_template(
+        "my_booking.html",
+        booking=booking,
+        room_type=room_type,
+        num_nights=num_nights,
+        assigned_room_number=assigned_room_number
+    )
 
 
 ##ADMIN ROUTES
@@ -531,6 +641,11 @@ def create_booking():
         room_type = RoomType.query.get_or_404(room_type_id)
         total = room_type.base_price * num_nights * num_rooms
 
+        assigned_room = find_next_available_room(room_type.id, check_in, check_out)
+        if not assigned_room:
+            flash("No available room number could be assigned for those dates.", "danger")
+            return redirect(url_for("create_booking"))
+
         guest = Guest(
             first_name=first_name,
             last_name=last_name,
@@ -554,7 +669,7 @@ def create_booking():
             num_rooms=num_rooms,
             num_adults=num_adults,
             num_children=num_children,
-            special_requests=special_requests,
+            special_requests=build_special_requests(assigned_room.room_number, "", special_requests),
             total_amount=total,
             currency="EUR"
         )
@@ -606,27 +721,6 @@ def manage_booking(booking_id):
             db.session.commit()
             flash(f"Booking #{booking.id} cancelled successfully.", "warning")
             return redirect("/admin/bookings")
-        
-        elif action == "check_in":
-            if booking.payment_status != "paid":
-                 flash("Cannot check in: payment not completed.", "danger")   
-                 return redirect("/admin/bookings")
-            
-            booking.status= "checked_in"
-            db.session.commit()
-            flash(f"Booking #{booking.id} checked in.", "success")
-            return redirect("/admin/bookings")
-
-        elif action == "check_out":
-             booking.status = "completed"
-             
-             room = Room.query.filter_by(current_booking_id=booking.id).first()
-             if room:
-                room.current_booking_id = None
-             
-             db.session.commit()
-             flash(f"Booking #{booking.id} checked out.", "info")
-             return redirect("/admin/bookings")
     
     
     
@@ -639,9 +733,9 @@ def manage_booking(booking_id):
             booking.num_children = int(request.form.get("num_children", booking.num_children))
             booking.special_requests = request.form.get("special_requests", booking.special_requests)
             #payment
-            payment_status = request.form.get("payment_status", booking.payment_status)
-            booking.payment_status = payment_status
-     
+            payment_method = request.form.get("payment_method", "reception")
+            booking.payment_method = payment_method
+            booking.payment_status = "paid" if payment_method == "card" else "pending"
        
            
            #if new rooom added add to oirignal price 
@@ -700,8 +794,8 @@ def edit_rooms():
 
 ##update room status
 @app.route("/admin/update-room-status/<int:room_id>", methods=["POST"])
-@admin_required
 @login_required
+@admin_required
 def update_room_status(room_id):
 
     room = Room.query.get_or_404(room_id)

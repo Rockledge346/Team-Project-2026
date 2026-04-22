@@ -105,7 +105,7 @@
                         <div class="form-check addon-item">
                             <input class="form-check-input addon-checkbox" type="checkbox" name="addons" value="{{ key }}" id="addon_{{ key }}">
                             <label class="form-check-label" for="addon_{{ key }}">
-                                {{ addon.label }} (+&euro;{{ "%.2f"|format(addon.price) }} / night)
+                                {{ addon.label }} (+&euro;{{ "%.2f"|format(addon.price) }} / person / night)
                             </label>
                         </div>
                         {% endfor %}
@@ -173,6 +173,8 @@
         var addonsTotalEl = document.getElementById('addonsTotal');
         var bookingTotalEl = document.getElementById('bookingTotal');
         var roomTotalEl = document.getElementById('roomTotal');
+        var numAdultsEl = document.getElementById('num_adults');
+        var numChildrenEl = document.getElementById('num_children');
         var roomTotal = parseFloat(roomTotalEl.dataset.roomTotal);
         var numNights = parseInt(roomTotalEl.dataset.numNights, 10);
         var addonData = JSON.parse('{{ addons | tojson | safe }}');
@@ -189,6 +191,7 @@
 
         function updateAddonTotals() {
             var addonsPerNight = 0;
+            var totalPeople = parseInt(numAdultsEl.value, 10) + parseInt(numChildrenEl.value, 10);
 
             addonCheckboxes.forEach(function(checkbox) {
                 if (checkbox.checked) {
@@ -196,7 +199,7 @@
                 }
             });
 
-            var addonsTotal = addonsPerNight * numNights;
+            var addonsTotal = addonsPerNight * totalPeople * numNights;
             var grandTotal = roomTotal + addonsTotal;
             addonsTotalEl.textContent = "€" + addonsTotal.toFixed(2);
             bookingTotalEl.textContent = "€" + grandTotal.toFixed(2);
@@ -205,6 +208,8 @@
         addonCheckboxes.forEach(function(checkbox) {
             checkbox.addEventListener('change', updateAddonTotals);
         });
+        numAdultsEl.addEventListener('change', updateAddonTotals);
+        numChildrenEl.addEventListener('change', updateAddonTotals);
     </script>
 
 </body>
