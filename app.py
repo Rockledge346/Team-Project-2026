@@ -20,6 +20,10 @@ login_manager = LoginManager(app)
 login_manager.login_view = "login"
 csrf = CSRFProtect(app)
 APP_BOOT_ID = uuid.uuid4().hex
+BOOKING_ADDONS = {
+    "breakfast": {"label": "Breakfast", "price": 12.0},
+    "dinner": {"label": "Dinner", "price": 22.0},
+}
 
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -133,6 +137,20 @@ def generate_reference():
             return ref
 
 
+def get_selected_addons(form_data):
+    selected_keys = form_data.getlist("addons")
+    selected = []
+    addons_total_per_night = 0.0
+
+    for key in selected_keys:
+        addon = BOOKING_ADDONS.get(key)
+        if addon:
+            selected.append({"key": key, **addon})
+            addons_total_per_night += addon["price"]
+
+    return selected, addons_total_per_night
+
+
 @app.route("/")
 def customer_page():
     room_types = RoomType.query.all()
@@ -205,7 +223,11 @@ def book_page(room_type_id):
     ci = datetime.strptime(check_in, "%Y-%m-%d")
     co = datetime.strptime(check_out, "%Y-%m-%d")
     num_nights = (co - ci).days
-    total = room_type.base_price * num_nights
+    selected_addons = []
+    addons_total_per_night = 0.0
+    addons_total = 0.0
+    room_total = room_type.base_price * num_nights
+    grand_total = room_total
 
     booked = get_rooms_booked(room_type.id, check_in, check_out)
     usable_rooms = Room.query.filter_by(
@@ -227,6 +249,10 @@ def book_page(room_type_id):
             flash("Sorry, this room type just became fully booked. Please choose another.", "danger")
             return redirect(url_for("search_page", check_in=check_in, check_out=check_out))
 
+        selected_addons, addons_total_per_night = get_selected_addons(request.form)
+        addons_total = addons_total_per_night * num_nights
+        grand_total = room_total + addons_total
+
         guest = Guest(
             first_name=request.form["first_name"],
             last_name=request.form["last_name"],
@@ -239,8 +265,7 @@ def book_page(room_type_id):
 
         payment_method = request.form.get("payment_method", "reception")
         payment_status = "paid" if payment_method == "card" else "pending"
-    
-    
+
         booking = Booking(
             guest_name=request.form["first_name"] + " " + request.form["last_name"],
             guest_email=request.form["email"],
@@ -253,8 +278,8 @@ def book_page(room_type_id):
             payment_status=payment_status,
             num_adults=int(request.form.get("num_adults", 1)),
             num_children=int(request.form.get("num_children", 0)),
-            special_requests=request.form.get("special_requests", ""),
-            total_amount=total,
+            special_requests=combined_special_requests,
+            total_amount=grand_total,
             currency="EUR"
         )
         db.session.add(booking)
@@ -269,7 +294,9 @@ def book_page(room_type_id):
                            check_in=check_in,
                            check_out=check_out,
                            num_nights=num_nights,
-                           total=total)
+                           total=grand_total,
+                           room_total=room_total,
+                           addons=BOOKING_ADDONS)
 
 
 @app.route("/confirmation/<int:booking_id>")
