@@ -31,7 +31,7 @@
                         </div>
                         <div class="col-sm-6">
                             <p class="mb-1">Duration: <strong>{{ num_nights }} night{{ 's' if num_nights != 1 else '' }}</strong></p>
-                            <p class="mb-0">Total: <strong>&euro;{{ "%.2f"|format(total) }}</strong></p>
+                            <p class="mb-0">Total: <strong id="bookingTotal">&euro;{{ "%.2f"|format(total) }}</strong></p>
                         </div>
                     </div>
                 </div>
@@ -99,6 +99,26 @@
                 </div>
 
                 <div class="card mb-4">
+                    <div class="card-header"><h5 class="mb-0">Add-ons</h5></div>
+                    <div class="card-body">
+                        {% for key, addon in addons.items() %}
+                        <div class="form-check addon-item">
+                            <input class="form-check-input addon-checkbox" type="checkbox" name="addons" value="{{ key }}" id="addon_{{ key }}">
+                            <label class="form-check-label" for="addon_{{ key }}">
+                                {{ addon.label }} (+&euro;{{ "%.2f"|format(addon.price) }} / night)
+                            </label>
+                        </div>
+                        {% endfor %}
+                        <small class="text-muted d-block mt-3">
+                            Room total: <span id="roomTotal" data-room-total="{{ room_total }}" data-num-nights="{{ num_nights }}">&euro;{{ "%.2f"|format(room_total) }}</span>
+                        </small>
+                        <small class="text-muted d-block">
+                            Add-ons total: <span id="addonsTotal">&euro;0.00</span>
+                        </small>
+                    </div>
+                </div>
+
+                <div class="card mb-4">
                     <div class="card-header"><h5 class="mb-0">Payment</h5></div>
                     <div class="card-body">
                         <div class="form-check mb-2">
@@ -149,6 +169,13 @@
     <script>
         var radios = document.querySelectorAll('input[name="payment_method"]');
         var cardFields = document.getElementById('cardFields');
+        var addonCheckboxes = document.querySelectorAll('.addon-checkbox');
+        var addonsTotalEl = document.getElementById('addonsTotal');
+        var bookingTotalEl = document.getElementById('bookingTotal');
+        var roomTotalEl = document.getElementById('roomTotal');
+        var roomTotal = parseFloat(roomTotalEl.dataset.roomTotal);
+        var numNights = parseInt(roomTotalEl.dataset.numNights, 10);
+        var addonData = JSON.parse('{{ addons | tojson | safe }}');
 
         radios.forEach(function(radio) {
             radio.addEventListener('change', function() {
@@ -158,6 +185,25 @@
                     cardFields.style.display = 'none';
                 }
             });
+        });
+
+        function updateAddonTotals() {
+            var addonsPerNight = 0;
+
+            addonCheckboxes.forEach(function(checkbox) {
+                if (checkbox.checked) {
+                    addonsPerNight += (addonData[checkbox.value] && addonData[checkbox.value].price) || 0;
+                }
+            });
+
+            var addonsTotal = addonsPerNight * numNights;
+            var grandTotal = roomTotal + addonsTotal;
+            addonsTotalEl.textContent = "€" + addonsTotal.toFixed(2);
+            bookingTotalEl.textContent = "€" + grandTotal.toFixed(2);
+        }
+
+        addonCheckboxes.forEach(function(checkbox) {
+            checkbox.addEventListener('change', updateAddonTotals);
         });
     </script>
 

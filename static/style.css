@@ -107,6 +107,21 @@ main {
     border-left: 4px solid #2d6a4f;
 }
 
+.find-room-card {
+    position: sticky;
+    top: 1rem;
+}
+
+.addon-item {
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 0.65rem 0.75rem;
+}
+
+.addon-item + .addon-item {
+    margin-top: 0.6rem;
+}
+
 /* confirmation page tick */
 .confirm-icon {
     font-size: 3.5rem;

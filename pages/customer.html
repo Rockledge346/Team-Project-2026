@@ -28,57 +28,62 @@
         <div class="container mt-4">
 
             <div class="row">
-                <div class="col-lg-8 mx-auto">
+                <div class="col-lg-10 mx-auto">
 
-                    <div class="card mb-4">
-                        <div class="card-body py-3">
-                            <h5 class="mb-3">Find Your Room</h5>
-                            <form action="/search" method="get" id="carouselBookingForm">
-                                <div class="row g-2 align-items-end">
-                                    <div class="col-md-4">
-                                        <label for="carousel_check_in" class="form-label mb-1">Check-in</label>
-                                        <input type="date" class="form-control" id="carousel_check_in" name="check_in" required>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label for="carousel_check_out" class="form-label mb-1">Check-out</label>
-                                        <input type="date" class="form-control" id="carousel_check_out" name="check_out" required>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <button type="submit" class="btn btn-primary w-100">Search Rooms</button>
-                                    </div>
+                    <div class="row g-4 align-items-stretch mb-4">
+                        <div class="col-lg-8">
+                            <div class="card h-100">
+                                <div class="card-header">
+                                    <h5 class="mb-0">Our Rooms</h5>
                                 </div>
-                            </form>
-                        </div>
-                    </div>
-
-                    <div class="card mb-4">
-                        <div class="card-header">
-                            <h5 class="mb-0">Our Rooms</h5>
-                        </div>
-                        <div class="card-body p-0">
-                            <div id="roomCarousel" class="carousel slide" data-bs-ride="false">
-                                <div class="carousel-indicators">
-                                    {% for rt in room_types %}
-                                    <button type="button" data-bs-target="#roomCarousel" data-bs-slide-to="{{ loop.index0 }}" {% if loop.first %}class="active"{% endif %}></button>
-                                    {% endfor %}
-                                </div>
-                                <div class="carousel-inner">
-                                    {% for rt in room_types %}
-                                    <div class="carousel-item {% if loop.first %}active{% endif %}">
-                                        <img src="{{ rt.photos }}" class="d-block w-100" alt="{{ rt.name }}" style="height: 320px; object-fit: cover;">
-                                        <div class="carousel-caption" style="background: rgba(0,0,0,0.5); border-radius: 8px; padding: 10px 20px;">
-                                            <h5>{{ rt.name }}</h5>
-                                            <p class="mb-0">From &euro;{{ "%.2f"|format(rt.base_price) }} per night</p>
+                                <div class="card-body p-0">
+                                    <div id="roomCarousel" class="carousel slide" data-bs-ride="false">
+                                        <div class="carousel-indicators">
+                                            {% for rt in room_types %}
+                                            <button type="button" data-bs-target="#roomCarousel" data-bs-slide-to="{{ loop.index0 }}" {% if loop.first %}class="active"{% endif %}></button>
+                                            {% endfor %}
                                         </div>
+                                        <div class="carousel-inner">
+                                            {% for rt in room_types %}
+                                            <div class="carousel-item {% if loop.first %}active{% endif %}">
+                                                <img src="{{ rt.photos }}" class="d-block w-100" alt="{{ rt.name }}" style="height: 320px; object-fit: cover;">
+                                                <div class="carousel-caption" style="background: rgba(0,0,0,0.5); border-radius: 8px; padding: 10px 20px;">
+                                                    <h5>{{ rt.name }}</h5>
+                                                    <p class="mb-0">From &euro;{{ "%.2f"|format(rt.base_price) }} per night</p>
+                                                </div>
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                        <button class="carousel-control-prev" type="button" data-bs-target="#roomCarousel" data-bs-slide="prev">
+                                            <span class="carousel-control-prev-icon"></span>
+                                        </button>
+                                        <button class="carousel-control-next" type="button" data-bs-target="#roomCarousel" data-bs-slide="next">
+                                            <span class="carousel-control-next-icon"></span>
+                                        </button>
                                     </div>
-                                    {% endfor %}
                                 </div>
-                                <button class="carousel-control-prev" type="button" data-bs-target="#roomCarousel" data-bs-slide="prev">
-                                    <span class="carousel-control-prev-icon"></span>
-                                </button>
-                                <button class="carousel-control-next" type="button" data-bs-target="#roomCarousel" data-bs-slide="next">
-                                    <span class="carousel-control-next-icon"></span>
-                                </button>
+                            </div>
+                        </div>
+                        <div class="col-lg-4">
+                            <div class="card h-100 find-room-card">
+                                <div class="card-body py-3">
+                                    <h5 class="mb-3">Find Your Room</h5>
+                                    <form action="/search" method="get" id="carouselBookingForm">
+                                        <div class="row g-2 align-items-end">
+                                            <div class="col-12">
+                                                <label for="carousel_check_in" class="form-label mb-1">Check-in</label>
+                                                <input type="date" class="form-control" id="carousel_check_in" name="check_in" required>
+                                            </div>
+                                            <div class="col-12">
+                                                <label for="carousel_check_out" class="form-label mb-1">Check-out</label>
+                                                <input type="date" class="form-control" id="carousel_check_out" name="check_out" required>
+                                            </div>
+                                            <div class="col-12">
+                                                <button type="submit" class="btn btn-primary w-100">Search Rooms</button>
+                                            </div>
+                                        </div>
+                                    </form>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -100,6 +105,8 @@
                             <ul class="mb-0">
                                 <li>Check-in time: 3:00 PM</li>
                                 <li>Check-out time: 11:00 AM</li>
+                                <li>Breakfast service: 7:00 AM - 10:00 AM</li>
+                                <li>Dinner service: 6:00 PM - 9:00 PM</li>
                                 <li>Free cancellation up to 24 hours before check-in</li>
                                 <li>No smoking in rooms</li>
                                 <li>Pets are not allowed</li>
