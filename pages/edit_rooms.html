@@ -5,14 +5,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Manage Rooms</title>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="/static/style.css">
 </head>
 
 <body>
 
-<nav class="navbar navbar-dark bg-dark">
+<nav class="navbar navbar-dark">
   <div class="container">
     <a class="navbar-brand" href="/">The Letterkenny Hotel</a>
-    <a href="/admin-dashboard" class="btn btn-secondary mt-3">Return</a>
+    <a href="/admin-dashboard" class="btn btn-dark mt-3">Return</a>
   </div>
 </nav>
 
@@ -45,7 +46,7 @@
         value="{{ room.room_type.base_price }}"
         class="form-control mb-2">
 
-        <button class="btn btn-sm btn-dark w-100">Update</button>
+        <button class="btn btn-sm btn-primary w-100">Update</button>
       </form>
     </div>
 
@@ -130,7 +131,7 @@ Out of Order
 
 <td>
 
-<button class="btn btn-dark btn-sm">Update</button>
+<button class="btn btn-primary btn-sm">Update</button>
 
 </td>
 
