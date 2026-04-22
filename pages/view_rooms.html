@@ -86,13 +86,15 @@ View the current availability of rooms & prices.
 
 
 <td>
+  {% if room.status == "out_of_order" %}
+        <span class="badge bg-secondary">Out of Order</span>
 
- {% if room.status == "available" %}
-    <span class="badge bg-success">Available</span>
+    {% elif room.room_number in booked_rooms %}
+        <span class="badge bg-danger">Booked</span>
 
-  {% elif room.status == "out_of_order" %}
-    <span class="badge bg-danger">Out of Order</span>
-{% endif %}
+    {% else %}
+        <span class="badge bg-success">Available</span>
+    {% endif %}
 </td>
 
 

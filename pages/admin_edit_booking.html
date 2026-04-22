@@ -61,6 +61,37 @@
               <input class="form-control" type="number" name="num_children" value="{{ booking.num_children }}">
             </div>
 
+
+       
+         
+
+        <div class="mb-3">
+  <label class="form-label">Add-ons</label>
+
+  <div class="border rounded p-3">
+    {% set sr = booking.special_requests or "" %}
+
+    {% for key, addon in addons.items() %}
+      <div class="form-check">
+        <input 
+          class="form-check-input"
+          type="checkbox"
+          name="addons"
+          value="{{ key }}"
+          id="addon_{{ key }}"
+          {% if addon.label in sr %}checked{% endif %}
+        >
+        <label class="form-check-label" for="addon_{{ key }}">
+          {{ addon.label }} (€{{ addon.price }} per person / night)
+        </label>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+
+
+
+
           
             <div class="mb-3">
               <label class="form-label">Special Requests</label>
