@@ -191,12 +191,7 @@ def search_page():
             room_type_id=rt.id,
             status="available"
         ).count()
-        
-        maintenance_rooms = RoomMaintenance.query.join(Room).filter(
-        Room.room_type_id == rt.id,
-        RoomMaintenance.start_date < check_out,
-        RoomMaintenance.end_date > check_in
-    ).count()
+   
         
         
         rooms_left = useable_rooms - booked
