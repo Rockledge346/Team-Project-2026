@@ -36,7 +36,7 @@
 
            
             <div class="mb-3">
-              <label class="form-label">Payment Status</label>
+              <label class="form-label">Payment</label>
               <select class="form-select" name="payment_status">
                 <option value="pending" {% if booking.payment_status=='pending' %}selected{% endif %}>Pending</option>
                 <option value="paid" {% if booking.payment_status=='paid' %}selected{% endif %}>Paid</option>
@@ -65,6 +65,14 @@
               <label class="form-label">Special Requests</label>
               <textarea class="form-control" name="special_requests" rows="2"style="resize: none;">{{ booking.special_requests }}</textarea>
             </div>
+
+            <!-- check in chewck out admin -->
+                <div class="mb-3">
+          <button name="action" value="check_in">Check In</button>
+          <button name="action" value="check_out">Check Out</button>
+
+                </div>
+
 
          
             <div class="d-grid gap-2">

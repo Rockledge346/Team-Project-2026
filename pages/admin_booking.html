@@ -32,7 +32,7 @@
 
   {% if bookings %}
     <div class="table-responsive">
-      <table class="table table-striped table-bordered align-middle">
+      <table class="table table-striped table-bordered align-middle table-sm">
         <thead class="table-dark">
           <tr>
             <th>ID</th>
@@ -43,7 +43,7 @@
             <th>Check-in</th>
             <th>Check-out</th>
             <th>Nights</th>
-            <th>Rooms</th>
+            <th>Room NO.</th>
             <th>Total</th>
             <th>Status</th>
             <th>Payment</th>
@@ -70,18 +70,33 @@
                 —
               {% endif %}
             </td>
-            <td>{{ b.status }}</td>
-            <td>
-              {% if b.payment_status == "paid" %}
-                <span class="badge bg-success">Paid</span>
+            <td>  {% if b.status == "confirmed" %}
+        <span class="badge bg-secondary">Confirmed</span>
+    {% elif b.status == "checked_in" %}
+        <span class="badge bg-success">Checked In</span>
+    {% elif b.status == "checked_out" %}
+        <span class="badge bg-primary">Checked Out</span>
+    {% elif b.status == "cancelled" %}
+        <span class="badge bg-danger">Cancelled</span>
+    {% else %}
+        <span class="badge bg-dark">{{ b.status }}</span>
+    {% endif %}</td>
             
-                {% elif b.payment_status == "refunded" %}
-             <span class="badge bg-info">Refunded</span>
-             
-                {% else %}
-                <span class="badge bg-warning">Pending</span>
-              {% endif %}
-            </td>
+    
+  <!--            payment status-->
+      <td>
+        {% if b.payment_status == "paid" %}
+            <span class="badge bg-success">Paid</span>
+        {% else %}
+            <span class="badge bg-warning">Pending</span>
+        {% endif %}
+    </td>
+
+
+
+
+
+         
             <td style="max-width:250px; white-space:normal;">
               {% if b.special_requests %}
                 {{ b.special_requests }}

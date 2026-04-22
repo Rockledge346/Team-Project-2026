@@ -77,6 +77,7 @@ class Booking(db.Model):
     currency = db.Column(db.String(10), default='EUR')
     room_type = db.relationship('RoomType', backref='bookings')
     guest = db.relationship('Guest', backref='bookings')
+    rooms = db.relationship("Room", backref="booking")
 
 
 class Room(db.Model):
@@ -89,23 +90,7 @@ class Room(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow)
     room_type = db.relationship('RoomType', backref='rooms')
-    
-    
-    
-    
-    #maintnence model 
-class RoomMaintenance(db.Model):
 
-    id = db.Column(db.Integer, primary_key=True)
-
-    room_id = db.Column(db.Integer, db.ForeignKey('room.id'), nullable=False)
-
-    start_date = db.Column(db.String(20), nullable=False)
-    end_date = db.Column(db.String(20), nullable=False)
-
-    reason = db.Column(db.String(200))
-
-    room = db.relationship('Room')
 
 @app.before_request
 def invalidate_session_after_restart():
@@ -196,7 +181,7 @@ def search_page():
     ).count()
         
         
-        rooms_left = useable_rooms - booked - maintenance_rooms
+        rooms_left = useable_rooms - booked
         if rooms_left > 0:
             rt.rooms_available = rooms_left
             available_rooms.append(rt)
@@ -228,13 +213,9 @@ def book_page(room_type_id):
     status="available"
     ).count()
 
-    maintenance_rooms = RoomMaintenance.query.join(Room).filter(
-    Room.room_type_id == room_type.id,
-    RoomMaintenance.start_date < check_out,
-    RoomMaintenance.end_date > check_in
-    ).count()
+  
 
-    rooms_left = usable_rooms - booked - maintenance_rooms
+    rooms_left = usable_rooms - booked
 
     if rooms_left <= 0:
         flash("Sorry, this room type is fully booked for the selected dates.", "danger")
@@ -254,11 +235,12 @@ def book_page(room_type_id):
             address=request.form.get("address", "")
         )
         db.session.add(guest)
-        db.session.flush()
+
 
         payment_method = request.form.get("payment_method", "reception")
         payment_status = "paid" if payment_method == "card" else "pending"
-
+    
+    
         booking = Booking(
             guest_name=request.form["first_name"] + " " + request.form["last_name"],
             guest_email=request.form["email"],
@@ -276,8 +258,10 @@ def book_page(room_type_id):
             currency="EUR"
         )
         db.session.add(booking)
+      
+   
         db.session.commit()
-
+   
         return redirect(url_for("confirmation_page", booking_id=booking.id))
 
     return render_template("book.html",
@@ -600,6 +584,27 @@ def manage_booking(booking_id):
             db.session.commit()
             flash(f"Booking #{booking.id} cancelled successfully.", "warning")
             return redirect("/admin/bookings")
+        
+        elif action == "check_in":
+            if booking.payment_status != "paid":
+                 flash("Cannot check in: payment not completed.", "danger")   
+                 return redirect("/admin/bookings")
+            
+            booking.status= "checked_in"
+            db.session.commit()
+            flash(f"Booking #{booking.id} checked in.", "success")
+            return redirect("/admin/bookings")
+
+        elif action == "check_out":
+             booking.status = "completed"
+             
+             room = Room.query.filter_by(current_booking_id=booking.id).first()
+             if room:
+                room.current_booking_id = None
+             
+             db.session.commit()
+             flash(f"Booking #{booking.id} checked out.", "info")
+             return redirect("/admin/bookings")
     
     
     
@@ -612,9 +617,9 @@ def manage_booking(booking_id):
             booking.num_children = int(request.form.get("num_children", booking.num_children))
             booking.special_requests = request.form.get("special_requests", booking.special_requests)
             #payment
-            payment_method = request.form.get("payment_method", "reception")
-            booking.payment_method = payment_method
-            booking.payment_status = "paid" if payment_method == "card" else "pending"
+            payment_status = request.form.get("payment_status", booking.payment_status)
+            booking.payment_status = payment_status
+     
        
            
            #if new rooom added add to oirignal price 
@@ -673,8 +678,8 @@ def edit_rooms():
 
 ##update room status
 @app.route("/admin/update-room-status/<int:room_id>", methods=["POST"])
-@login_required
 @admin_required
+@login_required
 def update_room_status(room_id):
 
     room = Room.query.get_or_404(room_id)
